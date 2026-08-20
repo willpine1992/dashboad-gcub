@@ -1,0 +1,206 @@
+// Dados fictícios que simulam o schema real do GCUB/db/gcub.db
+// (candidatos, candidaturas_uea, programas_escolhidos, documentos_anexados,
+// programas_uea). Nomes, e-mails e documentos são inventados; a forma da
+// distribuição (países, decisões, volume por programa) segue a proporção
+// observada na raspagem real do edital GCUB-MOB da UEA.
+
+export const PROGRAMAS_UEA = [
+  { id: 5, nome: "Gestão e Regulação de Recursos Hídricos", nivel: "Mestrado", sigla: "PPGRH", vagas: 4 },
+  { id: 10, nome: "Processos e Tecnologias Educacionais em Rede (ProfEducatec)", nivel: "Mestrado", sigla: "ProfEducatec", vagas: 3 },
+  { id: 9, nome: "Ciências Aplicadas à Dermatologia", nivel: "Mestrado", sigla: "PPGCAD", vagas: 2 },
+  { id: 1, nome: "Ciências Aplicadas à Hematologia", nivel: "Mestrado", sigla: "PPGH", vagas: 3 },
+  { id: 4, nome: "Direito Ambiental", nivel: "Mestrado", sigla: "PPGDA-M", vagas: 4 },
+  { id: 15, nome: "Direito Ambiental", nivel: "Doutorado", sigla: "PPGDA-D", vagas: 2 },
+  { id: 7, nome: "Educação (PPGED)", nivel: "Mestrado", sigla: "PPGED", vagas: 5 },
+  { id: 6, nome: "Educação em Ciências na Amazônia", nivel: "Mestrado", sigla: "PPGECA-M", vagas: 4 },
+  { id: 14, nome: "Educação em Ciências na Amazônia", nivel: "Doutorado", sigla: "PPGECA-D", vagas: 2 },
+  { id: 13, nome: "Enfermagem em Saúde Pública — ProEnSP", nivel: "Mestrado", sigla: "ProEnSP-M", vagas: 3 },
+  { id: 17, nome: "Enfermagem em Saúde Pública — ProEnSP", nivel: "Doutorado", sigla: "ProEnSP-D", vagas: 2 },
+  { id: 12, nome: "Geografia", nivel: "Mestrado", sigla: "PPGEO", vagas: 3 },
+  { id: 3, nome: "Letras e Artes", nivel: "Mestrado", sigla: "PPGLA", vagas: 4 },
+  { id: 16, nome: "Medicina Tropical / Doenças Tropicais e Infecciosas", nivel: "Doutorado", sigla: "PPGMT", vagas: 2 },
+  { id: 8, nome: "Segurança Pública, Cidadania e Direitos Humanos (PPGSP)", nivel: "Mestrado", sigla: "PPGSP", vagas: 5 },
+  { id: 2, nome: "Ciências Humanas (interdisciplinar)", nivel: "Mestrado", sigla: "PPGCH", vagas: 3 },
+  { id: 11, nome: "Biotecnologia e Recursos Naturais da Amazônia", nivel: "Mestrado", sigla: "PPGBIOTEC", vagas: 4 },
+];
+
+// Peso ~ proporcional à distribuição real observada na raspagem (Nigéria,
+// Afeganistão, Moçambique, Paquistão, Angola, Palestina, Haiti... no topo).
+const PAISES = [
+  { pais: "Nigéria", peso: 22, regiao: "África Ocidental" },
+  { pais: "Afeganistão", peso: 10, regiao: "Ásia Central" },
+  { pais: "Moçambique", peso: 10, regiao: "África Austral" },
+  { pais: "Paquistão", peso: 9, regiao: "Sul da Ásia" },
+  { pais: "Angola", peso: 8, regiao: "África Central" },
+  { pais: "Palestina", peso: 6, regiao: "Oriente Médio" },
+  { pais: "Haiti", peso: 5, regiao: "Caribe" },
+  { pais: "Camarões", peso: 3, regiao: "África Central" },
+  { pais: "Peru", peso: 3, regiao: "América do Sul" },
+  { pais: "Colômbia", peso: 2, regiao: "América do Sul" },
+  { pais: "Gana", peso: 2, regiao: "África Ocidental" },
+  { pais: "Quênia", peso: 2, regiao: "África Oriental" },
+  { pais: "Guiné-Bissau", peso: 2, regiao: "África Ocidental" },
+  { pais: "Bolívia", peso: 2, regiao: "América do Sul" },
+  { pais: "Nepal", peso: 2, regiao: "Sul da Ásia" },
+  { pais: "Iêmen", peso: 2, regiao: "Oriente Médio" },
+  { pais: "Síria", peso: 2, regiao: "Oriente Médio" },
+  { pais: "Outros (23 países)", peso: 8, regiao: "Diversos" },
+];
+
+const NOMES_POR_REGIAO = {
+  "África Ocidental": {
+    f: ["Amara", "Chiamaka", "Ngozi", "Adaeze", "Folake", "Aisha", "Abiodun"],
+    m: ["Chukwuemeka", "Oluwaseun", "Ibrahim", "Kwame", "Emeka", "Tunde", "Adewale"],
+    sobre: ["Okafor", "Adeyemi", "Balogun", "Eze", "Mensah", "Osei", "Diallo"],
+  },
+  "África Central": {
+    f: ["Nsimba", "Beatriz", "Esperança", "Domingas", "Tandiwe"],
+    m: ["Kiala", "João", "Domingos", "Ndongala", "Mbala"],
+    sobre: ["Kianda", "Sachipengo", "Nzuzi", "Muteba", "Massano"],
+  },
+  "África Austral": {
+    f: ["Amélia", "Custódia", "Sheila", "Ivone", "Marta"],
+    m: ["Armando", "Bento", "Sidónio", "Ernesto", "Faruk"],
+    sobre: ["Machava", "Muianga", "Cossa", "Nhaca", "Sitoe"],
+  },
+  "África Oriental": {
+    f: ["Amina", "Wanjiru", "Zawadi", "Naledi"],
+    m: ["Kiptoo", "Omondi", "Juma", "Otieno"],
+    sobre: ["Mwangi", "Kamau", "Otieno", "Wekesa"],
+  },
+  "Ásia Central": {
+    f: ["Zahra", "Fatima", "Roya", "Freshta", "Wahida"],
+    m: ["Ahmadullah", "Najibullah", "Mirwais", "Ehsanullah", "Rahmatullah"],
+    sobre: ["Rahimi", "Sherzai", "Popal", "Nazari", "Aziz"],
+  },
+  "Sul da Ásia": {
+    f: ["Ayesha", "Sundas", "Kiran", "Anjali", "Priya"],
+    m: ["Muhammad", "Usman", "Bilal", "Rajesh", "Arjun"],
+    sobre: ["Khan", "Ahmed", "Sharma", "Malik", "Iqbal"],
+  },
+  "Oriente Médio": {
+    f: ["Lina", "Rana", "Salma", "Noor", "Layla"],
+    m: ["Yousef", "Khalil", "Rami", "Omar", "Tariq"],
+    sobre: ["Haddad", "Saleh", "Aljundi", "Mansour", "Qassem"],
+  },
+  Caribe: {
+    f: ["Nadège", "Rosemène", "Woodline", "Merline"],
+    m: ["Jean", "Wilkenson", "Fabricio", "Emmanuel"],
+    sobre: ["Baptiste", "Pierre", "Joseph", "Louissaint"],
+  },
+  "América do Sul": {
+    f: ["Camila", "Valentina", "Luz", "Daniela"],
+    m: ["Andrés", "Diego", "Julián", "Mateo"],
+    sobre: ["Quispe", "Mamani", "Rojas", "Vargas"],
+  },
+  Diversos: {
+    f: ["Elif", "Mai", "Sopheak", "Dinara"],
+    m: ["Batu", "Anh", "Sokha", "Ravshan"],
+    sobre: ["Yıldız", "Nguyen", "Chan", "Karimov"],
+  },
+};
+
+function seededRandom(seed) {
+  let s = seed;
+  return () => {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    return s / 0x7fffffff;
+  };
+}
+
+function pickWeighted(rng, items, weightKey = "peso") {
+  const total = items.reduce((a, b) => a + b[weightKey], 0);
+  let r = rng() * total;
+  for (const it of items) {
+    r -= it[weightKey];
+    if (r <= 0) return it;
+  }
+  return items[items.length - 1];
+}
+
+function buildDataset(seed = 42) {
+  const rng = seededRandom(seed);
+  const candidatos = [];
+  const candidaturas = [];
+  const documentos = [];
+  const DOC_TIPOS = ["Identidade", "Diploma/Licenciatura", "Histórico Acadêmico", "Currículo"];
+
+  const N = 1180; // ordem de grandeza real (~1.9k candidatos únicos no edital completo, aqui uma amostra rica)
+  let candId = 20000;
+
+  for (let i = 0; i < N; i++) {
+    candId += 1 + Math.floor(rng() * 6);
+    const paisInfo = pickWeighted(rng, PAISES);
+    const pool = NOMES_POR_REGIAO[paisInfo.regiao] || NOMES_POR_REGIAO.Diversos;
+    const sexo = rng() < 0.47 ? "Feminino" : "Masculino";
+    const primeiroNome = sexo === "Feminino" ? pool.f[Math.floor(rng() * pool.f.length)] : pool.m[Math.floor(rng() * pool.m.length)];
+    const sobrenome = pool.sobre[Math.floor(rng() * pool.sobre.length)];
+    const nome = `${primeiroNome} ${sobrenome}`;
+
+    const idade = 20 + Math.floor(rng() * 26); // 20–45
+    const anoNasc = 2026 - idade;
+    const pcd = rng() < 0.03;
+    const professorUniversitario = rng() < 0.18;
+    const tipoInstituicao = rng() < 0.62 ? "Pública" : "Privada";
+    const residenciaDiferente = rng() < 0.08;
+
+    const candidato = {
+      id: candId,
+      nome_completo: nome,
+      sexo,
+      idade,
+      data_nascimento: `${String(1 + Math.floor(rng() * 28)).padStart(2, "0")}/${String(1 + Math.floor(rng() * 12)).padStart(2, "0")}/${anoNasc}`,
+      pais_origem: paisInfo.pais,
+      pais_residencia: residenciaDiferente ? "Portugal" : paisInfo.pais,
+      possui_deficiencia: pcd,
+      e_professor_universitario: professorUniversitario,
+      tipo_instituicao: tipoInstituicao,
+      email_1: `${primeiroNome}.${sobrenome}${candId}@example.org`.toLowerCase(),
+    };
+    candidatos.push(candidato);
+
+    // 1 a 2 candidaturas UEA por candidato (~7% escolheram 2 programas)
+    const nCandidaturas = rng() < 0.07 ? 2 : 1;
+    const programasEscolhidosIds = new Set();
+    for (let c = 0; c < nCandidaturas; c++) {
+      let programa;
+      do {
+        programa = pickWeighted(rng, PROGRAMAS_UEA.map((p) => ({ ...p, peso: p.vagas + 1 })));
+      } while (programasEscolhidosIds.has(programa.id));
+      programasEscolhidosIds.add(programa.id);
+
+      const ordem = pickWeighted(rng, [
+        { v: "1ª opção", peso: 18 },
+        { v: "2ª opção", peso: 28 },
+        { v: "3ª opção", peso: 30 },
+        { v: "4ª opção", peso: 24 },
+      ]).v;
+
+      const decisaoRoll = rng();
+      const decisao = decisaoRoll < 0.55 ? "Pendente" : decisaoRoll < 0.85 ? "Aceito" : "Recusado";
+
+      const docs = DOC_TIPOS.map((tipo) => ({
+        tipo,
+        anexado: rng() < 0.86,
+      }));
+
+      candidaturas.push({
+        id: candidaturas.length + 1,
+        candidato_id: candidato.id,
+        candidato_nome: nome,
+        pais_origem: paisInfo.pais,
+        programa_uea_id: programa.id,
+        programa_uea_nome: programa.nome,
+        programa_uea_sigla: programa.sigla,
+        nivel: programa.nivel,
+        ordem_preferencia: ordem,
+        decisao,
+        documentos: docs,
+      });
+    }
+  }
+
+  return { candidatos, candidaturas, programas: PROGRAMAS_UEA };
+}
+
+export const DATASET = buildDataset();

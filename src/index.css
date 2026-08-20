@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+/*
+  Paleta institucional — mesmos tokens do DASHBOARD 2 (GERBRAS), com um
+  acento dourado adicional próprio do GCUB-MOB. Ver DASHBOARD 2/README-DESIGN.txt.
+*/
+:root {
+  --surface-page: #f6faf8;
+  --surface-panel: #ffffff;
+  --surface-alt: #f6faf8;
+  --surface-hover: #eef8f2;
+  --surface-sidebar: #0b3d2b;
+  --surface-sidebar-hover: #0f4d36;
+
+  --ink-primary: #0b3d2b;
+  --ink-secondary: #3a3a3c;
+  --ink-muted: #7a8580;
+  --ink-on-accent: #ffffff;
+  --ink-on-sidebar: #eaf6ef;
+  --ink-on-sidebar-muted: #9fc7ae;
+
+  --border-hairline: #cdeedd;
+  --border-strong: #9fd9bb;
+
+  --accent: #1f8a5f;
+  --accent-strong: #0b6b45;
+  --accent-soft: #eaf7f0;
+
+  --gold: #b8892f;
+  --gold-strong: #96701f;
+  --gold-soft: #f6ecd2;
+
+  --status-pendente: #c9861a;
+  --status-pendente-soft: #fbf0d9;
+  --status-aceito: #1f8a5f;
+  --status-aceito-soft: #eaf7f0;
+  --status-recusado: #c0433a;
+  --status-recusado-soft: #fbe9e7;
+
+  --shadow-color: 154 60% 15%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface-page: #0a100c;
+    --surface-panel: #101712;
+    --surface-alt: #131b15;
+    --surface-hover: #1e2921;
+    --surface-sidebar: #06100a;
+    --surface-sidebar-hover: #102018;
+
+    --ink-primary: #7fe8ab;
+    --ink-secondary: #e7ebe8;
+    --ink-muted: #93a196;
+    --ink-on-accent: #06120a;
+    --ink-on-sidebar: #eaf6ef;
+    --ink-on-sidebar-muted: #6f9481;
+
+    --border-hairline: #24352b;
+    --border-strong: #3a5a45;
+
+    --accent: #34d399;
+    --accent-strong: #6ee7b8;
+    --accent-soft: #16241c;
+
+    --gold: #e0b25c;
+    --gold-strong: #f2c976;
+    --gold-soft: #2b2211;
+
+    --status-pendente: #e0b25c;
+    --status-pendente-soft: #2b2211;
+    --status-aceito: #34d399;
+    --status-aceito-soft: #16241c;
+    --status-recusado: #e0716a;
+    --status-recusado-soft: #2b1613;
+
+    --shadow-color: 154 80% 2%;
+  }
+}
+
+:root[data-theme="dark"] {
+  --surface-page: #0a100c;
+  --surface-panel: #101712;
+  --surface-alt: #131b15;
+  --surface-hover: #1e2921;
+  --surface-sidebar: #06100a;
+  --surface-sidebar-hover: #102018;
+
+  --ink-primary: #7fe8ab;
+  --ink-secondary: #e7ebe8;
+  --ink-muted: #93a196;
+  --ink-on-accent: #06120a;
+  --ink-on-sidebar: #eaf6ef;
+  --ink-on-sidebar-muted: #6f9481;
+
+  --border-hairline: #24352b;
+  --border-strong: #3a5a45;
+
+  --accent: #34d399;
+  --accent-strong: #6ee7b8;
+  --accent-soft: #16241c;
+
+  --gold: #e0b25c;
+  --gold-strong: #f2c976;
+  --gold-soft: #2b2211;
+
+  --status-pendente: #e0b25c;
+  --status-pendente-soft: #2b2211;
+  --status-aceito: #34d399;
+  --status-aceito-soft: #16241c;
+  --status-recusado: #e0716a;
+  --status-recusado-soft: #2b1613;
+
+  --shadow-color: 154 80% 2%;
+}
+
+@theme inline {
+  --color-page: var(--surface-page);
+  --color-panel: var(--surface-panel);
+  --color-alt: var(--surface-alt);
+  --color-hover: var(--surface-hover);
+  --color-sidebar: var(--surface-sidebar);
+  --color-sidebar-hover: var(--surface-sidebar-hover);
+
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-on-accent: var(--ink-on-accent);
+  --color-ink-on-sidebar: var(--ink-on-sidebar);
+  --color-ink-on-sidebar-muted: var(--ink-on-sidebar-muted);
+
+  --color-border-hairline: var(--border-hairline);
+  --color-border-strong: var(--border-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-gold: var(--gold);
+  --color-gold-strong: var(--gold-strong);
+  --color-gold-soft: var(--gold-soft);
+
+  --color-pendente: var(--status-pendente);
+  --color-pendente-soft: var(--status-pendente-soft);
+  --color-aceito: var(--status-aceito);
+  --color-aceito-soft: var(--status-aceito-soft);
+  --color-recusado: var(--status-recusado);
+  --color-recusado-soft: var(--status-recusado-soft);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--ink-secondary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-shadow {
+  box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 8px 24px hsl(var(--shadow-color) / 0.06);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -24,19 +24,25 @@ export const PROGRAMAS_UEA = [
   { id: 11, nome: "Biotecnologia e Recursos Naturais da Amazônia", nivel: "Mestrado", sigla: "PPGBIOTEC", vagas: 4 },
 ];
 
-// E-mails reais de contato dos PPGs da UEA (WEBSCRAPING/GCUB/db/gcub.db,
-// tabelas ppgs_uea/ppgs_uea_emails). Só 8 dos 17 programas do edital
-// GCUB-MOB têm e-mail cadastrado até agora — os demais ficam de fora do
-// mapa (tratados como "sem contato cadastrado" na tela).
+// Contato real dos PPGs da UEA (WEBSCRAPING/GCUB/db/gcub.db, tabela
+// ppgs_uea — e-mail institucional oficial + coordenador(a)). 14 dos 17
+// programas do edital GCUB-MOB têm contato cadastrado até agora — os
+// demais ficam de fora do mapa ("sem contato cadastrado" na tela).
 export const PPGS_EMAILS = {
-  5: ["ibatista@uea.edu.br", "mestradoprofagua@uea.edu.br"], // PPGRH (Rede PROFÁGUA)
-  9: ["ppgdermatologia@fuam.am.gov.br"], // PPGCAD
-  1: ["mestrado@hemoam.am.gov.br"], // PPGH
-  7: ["lfonseca@uea.edu.br", "ppged@uea.edu.br"], // PPGED
-  12: ["splima@uea.edu.br", "ppgeouea@uea.edu.br"], // PPGEO
-  3: ["mpascoa@uea.edu.br", "ppgla@uea.edu.br", "sec-ppgla@uea.edu.br"], // PPGLA
-  8: ["asicsu@uea.edu.br", "proensp@uea.edu.br"], // PPGSP
-  11: ["mbt@uea.edu.br"], // PPGBIOTEC (PPGMBT)
+  1: { sigla: "PPGH", nome: "Ciências Aplicadas à Hematologia (PPGH)", emailPpg: "mestrado@hemoam.am.gov.br", coordenadorNome: "Andrea Monteiro Tarragô", coordenadorEmail: "andrea_s_monteiro@hotmail.com" },
+  2: { sigla: "PPGICH", nome: "Interdisciplinar em Ciências Humanas (PPGICH)", emailPpg: "cienciashumanas@uea.edu.br", coordenadorNome: "Lúcia Marina Puga Ferreira", coordenadorEmail: "lpuga@uea.edu.br" },
+  3: { sigla: "PPGLA", nome: "Letras e Artes (PPGLA)", emailPpg: "ppgla@uea.edu.br", coordenadorNome: "Allison Marcos Leão da Silva", coordenadorEmail: "allisonleao@uea.edu.br" },
+  4: { sigla: "PPGDA", nome: "Direito Ambiental (PPGDA)", emailPpg: "pmda@uea.edu.br", coordenadorNome: "Erivaldo Cavalcanti e Silva Filho", coordenadorEmail: "ecfilho@uea.edu.br" },
+  5: { sigla: "PROFAGUA", nome: "Gestão e Regulação de Recursos Hídricos (PROFÁGUA)", emailPpg: "mestradoprofagua@uea.edu.br", coordenadorNome: "Iêda Hortêncio Batista", coordenadorEmail: "ibatista@uea.edu.br" },
+  6: { sigla: "PPGECA", nome: "Educação em Ciências na Amazônia (PPGECA)", emailPpg: "ppgeec@uea.edu.br", coordenadorNome: "Caroline Barroncas de Oliveira", coordenadorEmail: "cboliveira@uea.edu.br" },
+  7: { sigla: "PPGED", nome: "Educação (PPGED)", emailPpg: "ppged@uea.edu.br", coordenadorNome: "Vilma Terezinha de Araújo Lima", coordenadorEmail: "vtlima@uea.edu.br" },
+  8: { sigla: "PPGSP", nome: "Segurança Pública, Cidadania e Direitos Humanos (PPGSP)", emailPpg: "ppgsp@uea.edu.br", coordenadorNome: "Dorli João Carlos Marques", coordenadorEmail: "dmarques@uea.edu.br" },
+  9: { sigla: "PPGCAD", nome: "Ciências Aplicadas à Dermatologia (PPGCAD)", emailPpg: "ppgdermatologia@fuam.am.gov.br", coordenadorNome: "Carolina Chrusciak Talhari Cortez", coordenadorEmail: "carolinatalhari@gmail.com" },
+  10: { sigla: "ProfEducatec", nome: "Processos e Tecnologias Educacionais (ProfEducatec)", emailPpg: "profeducatec@uea.edu.br", coordenadorNome: null, coordenadorEmail: null },
+  11: { sigla: "PPGMBT", nome: "Biotecnologia e Recursos Naturais da Amazônia (PPGMBT)", emailPpg: "mbt@uea.edu.br", coordenadorNome: "Jair Max Furtunato Maia", coordenadorEmail: "jmaia@uea.edu.br" },
+  12: { sigla: "PPGEO", nome: "Geografia (PPGEO)", emailPpg: "ppgeouea@uea.edu.br", coordenadorNome: "Julien Marius Reis Thevenin", coordenadorEmail: "jthevenin@uea.edu.br" },
+  13: { sigla: "ProEnSP", nome: "Enfermagem em Saúde Pública (ProEnSP)", emailPpg: "proensp@uea.edu.br", coordenadorNome: "Amélia Nunes Sicsú", coordenadorEmail: "asicsu@uea.edu.br" },
+  16: { sigla: "PPGMT", nome: "Medicina Tropical (PPGMT)", emailPpg: "ppgmt.uea@fmt.am.gov.br", coordenadorNome: "Gisely Cardoso de Melo", coordenadorEmail: "gcmelo@uea.edu.br" },
 };
 
 // Peso ~ proporcional à distribuição real observada na raspagem (Nigéria,

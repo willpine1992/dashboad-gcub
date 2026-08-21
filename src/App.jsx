@@ -311,11 +311,16 @@ function PpgEmailsList({ candidaturas, programas, ppgsEmails }) {
     const idsPresentes = new Set(candidaturas.map((c) => c.programa_uea_id));
     return programas
       .filter((p) => idsPresentes.has(p.id))
-      .map((p) => ({
-        ...p,
-        emails: ppgsEmails[p.id] || [],
-        total: candidaturas.filter((c) => c.programa_uea_id === p.id).length,
-      }))
+      .map((p) => {
+        const contato = ppgsEmails[p.id];
+        const emails = contato ? [contato.emailPpg, contato.coordenadorEmail].filter(Boolean) : [];
+        return {
+          ...p,
+          emails,
+          coordenadorNome: contato?.coordenadorNome ?? null,
+          total: candidaturas.filter((c) => c.programa_uea_id === p.id).length,
+        };
+      })
       .sort((a, b) => b.total - a.total);
   }, [candidaturas, programas, ppgsEmails]);
 
@@ -352,6 +357,11 @@ function PpgEmailsList({ candidaturas, programas, ppgsEmails }) {
                       {p.nome} · {p.nivel} · {p.total} candidatura{p.total === 1 ? "" : "s"}
                     </span>
                   </p>
+                  {p.coordenadorNome && (
+                    <p className="mt-0.5 text-xs" style={{ color: "var(--ink-muted)" }}>
+                      Coordenador(a): {p.coordenadorNome}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {p.emails.length === 0 ? (
@@ -359,10 +369,11 @@ function PpgEmailsList({ candidaturas, programas, ppgsEmails }) {
                       Sem e-mail cadastrado
                     </span>
                   ) : (
-                    p.emails.map((email) => (
+                    p.emails.map((email, i) => (
                       <a
                         key={email}
                         href={`mailto:${email}`}
+                        title={i === 0 ? "E-mail do PPG" : "E-mail do(a) coordenador(a)"}
                         className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors"
                         style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
                       >

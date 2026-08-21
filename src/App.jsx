@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutDashboard,
   ListChecks,
@@ -22,6 +22,7 @@ import {
   Check,
   Database,
   FlaskConical,
+  Upload,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -36,7 +37,7 @@ import {
   Pie,
   Legend,
 } from "recharts";
-import { loadDataset } from "./data";
+import { loadDataset, parseUploadedDataset } from "./data";
 
 // Cores fixas (hex) para marcas de gráfico: atributos de apresentação SVG
 // (fill/stroke) não resolvem var() no Chrome — só funciona dentro de
@@ -1055,6 +1056,8 @@ export default function App() {
   const [tab, setTab] = useState("visao-geral");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [dataInfo, setDataInfo] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     let ativo = true;
@@ -1065,6 +1068,30 @@ export default function App() {
       ativo = false;
     };
   }, []);
+
+  // Botão "Carregar arquivo de dados" — lê 100% no navegador (FileReader),
+  // sem servidor envolvido. É assim que o app exportado (sem dado real
+  // embutido, seguro pra distribuir) vira interativo com dado real: quem
+  // recebe o .html + o .json abre o app e carrega o arquivo ele mesmo.
+  const carregarArquivoDados = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite recarregar o mesmo arquivo de novo depois
+    if (!file) return;
+    setUploadError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const info = parseUploadedDataset(String(reader.result));
+        setFilters(DEFAULT_FILTERS);
+        setTab("visao-geral");
+        setDataInfo({ ...info, source: "upload", fileName: file.name });
+      } catch (err) {
+        setUploadError(err.message || String(err));
+      }
+    };
+    reader.onerror = () => setUploadError("Não foi possível ler o arquivo.");
+    reader.readAsText(file);
+  };
 
   const setFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: value }));
   const toggleFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: f[key] === value ? "todos" : value }));
@@ -1181,11 +1208,35 @@ export default function App() {
             className="mt-1 text-[11px] leading-relaxed"
             style={{ color: isReal ? "var(--gold-strong)" : "var(--ink-on-sidebar-muted)" }}
           >
-            {isReal
-              ? `Lido de WEBSCRAPING/GCUB/db/gcub.db (exportado em ${dataInfo.generatedAt}). Contém candidatos reais — não compartilhe telas nem publique.`
-              : "Protótipo com dados fictícios para simulação de layout — não reflete candidatos reais."}
+            {dataInfo.source === "upload"
+              ? `Carregado de "${dataInfo.fileName}". Contém candidatos reais — não compartilhe telas nem publique.`
+              : isReal
+                ? `Lido de WEBSCRAPING/GCUB/db/gcub.db (exportado em ${dataInfo.generatedAt}). Contém candidatos reais — não compartilhe telas nem publique.`
+                : "Protótipo com dados fictícios para simulação de layout — não reflete candidatos reais."}
           </p>
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          onChange={carregarArquivoDados}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="mt-2 flex items-center justify-center gap-1.5 rounded-xl border border-dashed px-3 py-2 text-xs font-semibold transition-colors"
+          style={{ borderColor: "var(--ink-on-sidebar-muted)", color: "var(--ink-on-sidebar)" }}
+        >
+          <Upload className="h-3.5 w-3.5" />
+          Carregar arquivo de dados
+        </button>
+        {uploadError && (
+          <p className="mt-1.5 px-1 text-[11px] leading-relaxed" style={{ color: "#e0716a" }}>
+            {uploadError}
+          </p>
+        )}
 
         <p className="mt-3 px-1 text-left text-[11px]" style={{ color: "var(--ink-on-sidebar-muted)" }}>
           Powered by William Pinheiro

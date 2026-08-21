@@ -83,3 +83,23 @@ propósito, pra não ter nenhum risco de um `git add -A` aqui dentro varrer
 dado real de candidato pro repositório público. Contém nome completo, país,
 idade e decisão de ~1.930 candidatos reais — **nunca compartilhe prints
 nem publique enquanto estiver em modo "Dados reais".**
+
+## Enviar o painel pra outra pessoa (com dado real)
+
+O botão **"Carregar arquivo de dados"** (barra lateral, sempre visível)
+lê um JSON no mesmo formato de `dashboard_real_data.json` **inteiramente
+no navegador de quem abre o app** (`FileReader`, sem servidor, sem
+upload pra lugar nenhum) e substitui o dado em tela por ele. Isso separa
+o app (código, sem dado nenhum) do dado (arquivo à parte):
+
+1. `npm run build` gera `docs/index.html` — o app, zero dado real, seguro
+   de distribuir (mesmo arquivo que vai pro GitHub Pages).
+2. Copie `WEBSCRAPING/GCUB/db/dashboard_real_data.json` pra perto dele
+   (ou gere um novo com `export_for_dashboard.py`).
+3. Envie os dois arquivos juntos pra pessoa. Ela abre o `.html` (funciona
+   com duplo-clique, sem instalar nada — é um HTML autocontido) e clica
+   em "Carregar arquivo de dados" pra escolher o `.json`.
+
+⚠️ O `.json` continua sendo dado pessoal real de candidatos — enviar os
+dois arquivos é o mesmo que enviar a base toda pra quem receber. Só
+mande pra quem realmente precisa avaliar os candidatos.

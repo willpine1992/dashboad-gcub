@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard,
   ListChecks,
@@ -14,10 +14,9 @@ import {
   GraduationCap,
   Percent,
   Clock3,
-  Building2,
-  UserCheck,
   Accessibility,
   Filter,
+  X,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -67,7 +66,42 @@ const NAV_ITEMS = [
   { id: "perfil", label: "Perfil dos Candidatos", icon: Users },
 ];
 
+const STATUS_KEYS = ["Pendente", "Aceito", "Recusado"];
 const CAT_COLORS = CHART_HEX.cat;
+
+const FAIXAS_ETARIAS = [
+  { name: "18–24", min: 18, max: 24 },
+  { name: "25–29", min: 25, max: 29 },
+  { name: "30–34", min: 30, max: 34 },
+  { name: "35–39", min: 35, max: 39 },
+  { name: "40+", min: 40, max: 200 },
+];
+
+// Todo filtro do painel vive nesse objeto único (App), assim qualquer
+// seleção feita clicando num gráfico em qualquer aba passa a valer nas
+// outras abas também. "todos" = sem filtro nessa dimensão.
+const DEFAULT_FILTERS = {
+  programa: "todos",
+  nivel: "todos",
+  status: "todos",
+  ordem: "todos",
+  pais: "todos",
+  faixa: "todos",
+  sexo: "todos",
+  professor: "todos",
+  instituicao: "todos",
+};
+
+const FILTER_LABELS = {
+  nivel: "Nível",
+  status: "Status",
+  ordem: "Ordem de preferência",
+  pais: "País",
+  faixa: "Faixa etária",
+  sexo: "Sexo",
+  professor: "Professor(a) universitário(a)",
+  instituicao: "Instituição de origem",
+};
 
 function StatusBadge({ status }) {
   return (
@@ -138,7 +172,10 @@ function KpiCard({ icon: Icon, label, value, hint, accent = "green" }) {
   );
 }
 
-function GlobalFilters({ programas, programaFiltro, setProgramaFiltro, nivelFiltro, setNivelFiltro }) {
+const selectClass = "rounded-xl border px-3 py-2 text-sm font-medium outline-none";
+const selectStyle = { borderColor: "var(--border-hairline)", background: "var(--surface-panel)", color: "var(--ink-secondary)" };
+
+function GlobalFilters({ programas, filters, setFilterValue, clearFilters, hasActiveFilters }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div
@@ -148,12 +185,7 @@ function GlobalFilters({ programas, programaFiltro, setProgramaFiltro, nivelFilt
         <Filter className="h-3.5 w-3.5" />
         Filtros
       </div>
-      <select
-        value={programaFiltro}
-        onChange={(e) => setProgramaFiltro(e.target.value)}
-        className="rounded-xl border px-3 py-2 text-sm font-medium outline-none"
-        style={{ borderColor: "var(--border-hairline)", background: "var(--surface-panel)", color: "var(--ink-secondary)" }}
-      >
+      <select value={filters.programa} onChange={(e) => setFilterValue("programa", e.target.value)} className={selectClass} style={selectStyle}>
         <option value="todos">Todos os programas</option>
         {programas.map((p) => (
           <option key={p.id} value={String(p.id)}>
@@ -161,22 +193,55 @@ function GlobalFilters({ programas, programaFiltro, setProgramaFiltro, nivelFilt
           </option>
         ))}
       </select>
-      <select
-        value={nivelFiltro}
-        onChange={(e) => setNivelFiltro(e.target.value)}
-        className="rounded-xl border px-3 py-2 text-sm font-medium outline-none"
-        style={{ borderColor: "var(--border-hairline)", background: "var(--surface-panel)", color: "var(--ink-secondary)" }}
-      >
+      <select value={filters.nivel} onChange={(e) => setFilterValue("nivel", e.target.value)} className={selectClass} style={selectStyle}>
         <option value="todos">Mestrado e Doutorado</option>
         <option value="Mestrado">Mestrado</option>
         <option value="Doutorado">Doutorado</option>
       </select>
+      <button
+        type="button"
+        onClick={clearFilters}
+        disabled={!hasActiveFilters}
+        className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        style={{ borderColor: "var(--border-hairline)", color: hasActiveFilters ? "var(--status-recusado)" : "var(--ink-muted)" }}
+      >
+        <X className="h-3.5 w-3.5" />
+        Limpar filtros
+      </button>
     </div>
   );
 }
 
-function VisaoGeral({ candidaturas, candidatosUnicos, programas }) {
-  const total = candidatosUnicos.size;
+function FilterChips({ filters, programas, setFilterValue }) {
+  const items = [];
+  if (filters.programa !== "todos") {
+    const p = programas.find((x) => String(x.id) === filters.programa);
+    items.push({ key: "programa", label: `Programa: ${p ? p.sigla : filters.programa}` });
+  }
+  for (const key of Object.keys(FILTER_LABELS)) {
+    if (filters[key] !== "todos") items.push({ key, label: `${FILTER_LABELS[key]}: ${filters[key]}` });
+  }
+  if (items.length === 0) return null;
+  return (
+    <div className="-mt-2 mb-6 flex flex-wrap items-center gap-2">
+      {items.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          onClick={() => setFilterValue(item.key, "todos")}
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+          style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
+        >
+          {item.label}
+          <X className="h-3 w-3" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function VisaoGeral({ candidaturas, candidatos, programas }) {
+  const total = candidatos.length;
   const recebidas = candidaturas.length;
   const aceitas = candidaturas.filter((c) => c.decisao === "Aceito").length;
   const pendentes = candidaturas.filter((c) => c.decisao === "Pendente").length;
@@ -223,49 +288,42 @@ function VisaoGeral({ candidaturas, candidatosUnicos, programas }) {
               </div>
             );
           })}
+          {porPrograma.length === 0 && (
+            <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
+              Nenhuma candidatura no recorte filtrado atual.
+            </p>
+          )}
         </div>
       </ChartCard>
     </div>
   );
 }
 
-const STATUS_KEYS = ["Pendente", "Aceito", "Recusado"];
-
-function FunilAvaliacao({ candidaturas, programas }) {
+function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, toggleFilterValue }) {
   const [page, setPage] = useState(0);
-  const [statusOff, setStatusOff] = useState(() => new Set());
   const pageSize = 8;
 
-  const toggleStatus = (status) => {
-    setStatusOff((prev) => {
-      const next = new Set(prev);
-      if (next.has(status)) next.delete(status);
-      else next.add(status);
-      return next;
-    });
+  useEffect(() => {
     setPage(0);
-  };
-
-  const candidaturasVisiveis = useMemo(
-    () => candidaturas.filter((c) => !statusOff.has(c.decisao)),
-    [candidaturas, statusOff]
-  );
+  }, [candidaturas]);
 
   const porProgramaStatus = useMemo(() => {
     const map = new Map();
     for (const p of programas) map.set(p.sigla, { sigla: p.sigla, Pendente: 0, Aceito: 0, Recusado: 0 });
-    for (const c of candidaturasVisiveis) {
+    for (const c of candidaturas) {
       const row = map.get(c.programa_uea_sigla);
       if (row) row[c.decisao] += 1;
     }
     return [...map.values()]
       .filter((r) => r.Pendente + r.Aceito + r.Recusado > 0)
       .sort((a, b) => b.Pendente + b.Aceito + b.Recusado - (a.Pendente + a.Aceito + a.Recusado));
-  }, [candidaturasVisiveis, programas]);
+  }, [candidaturas, programas]);
 
-  const totalPages = Math.max(1, Math.ceil(candidaturasVisiveis.length / pageSize));
-  const pageRows = candidaturasVisiveis.slice(page * pageSize, page * pageSize + pageSize);
-  const lastVisibleKey = [...STATUS_KEYS].reverse().find((s) => !statusOff.has(s));
+  const totalPages = Math.max(1, Math.ceil(candidaturas.length / pageSize));
+  const currentPage = Math.min(page, totalPages - 1);
+  const pageRows = candidaturas.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
+  const activeStatuses = filters.status === "todos" ? STATUS_KEYS : [filters.status];
+  const lastVisibleKey = [...STATUS_KEYS].reverse().find((s) => activeStatuses.includes(s));
 
   return (
     <div className="flex flex-col gap-6">
@@ -290,13 +348,14 @@ function FunilAvaliacao({ candidaturas, programas }) {
                 contentStyle={{ borderRadius: 12, border: "1px solid var(--border-hairline)", fontSize: 12, background: "var(--surface-panel)" }}
               />
               <Legend
-                onClick={(entry) => toggleStatus(entry.value)}
+                onClick={(entry) => toggleFilterValue("status", entry.value)}
                 wrapperStyle={{ fontSize: 12, cursor: "pointer" }}
                 formatter={(value) => (
                   <span
                     style={{
-                      color: statusOff.has(value) ? "var(--ink-muted)" : "var(--ink-secondary)",
-                      textDecoration: statusOff.has(value) ? "line-through" : "none",
+                      color: filters.status === value ? "var(--ink-primary)" : "var(--ink-muted)",
+                      fontWeight: filters.status === value ? 700 : 500,
+                      textDecoration: filters.status !== "todos" && filters.status !== value ? "line-through" : "none",
                     }}
                   >
                     {value}
@@ -309,6 +368,8 @@ function FunilAvaliacao({ candidaturas, programas }) {
                   dataKey={status}
                   stackId="s"
                   fill={STATUS_HEX[status]}
+                  cursor="pointer"
+                  onClick={() => toggleFilterValue("status", status)}
                   radius={status === lastVisibleKey ? [0, 4, 4, 0] : [0, 0, 0, 0]}
                 />
               ))}
@@ -318,6 +379,35 @@ function FunilAvaliacao({ candidaturas, programas }) {
       </ChartCard>
 
       <ChartCard title="Auditoria de documentos" subtitle="Checagem rápida de anexos por candidatura — clique em “Abrir PDF” para simular a visualização">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <select
+            value={filters.status}
+            onChange={(e) => setFilterValue("status", e.target.value)}
+            className={selectClass}
+            style={selectStyle}
+          >
+            <option value="todos">Status: todos</option>
+            {STATUS_KEYS.map((s) => (
+              <option key={s} value={s}>
+                Status: {s}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.programa}
+            onChange={(e) => setFilterValue("programa", e.target.value)}
+            className={selectClass}
+            style={selectStyle}
+          >
+            <option value="todos">Programa: todos</option>
+            {programas.map((p) => (
+              <option key={p.id} value={String(p.id)}>
+                Programa: {p.sigla}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
@@ -371,20 +461,26 @@ function FunilAvaliacao({ candidaturas, programas }) {
                   </td>
                 </tr>
               ))}
+              {pageRows.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-sm" style={{ color: "var(--ink-muted)" }}>
+                    Nenhuma candidatura corresponde aos filtros selecionados.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         <div className="mt-4 flex items-center justify-between text-xs" style={{ color: "var(--ink-muted)" }}>
           <span>
-            Mostrando {pageRows.length === 0 ? 0 : page * pageSize + 1}–{Math.min((page + 1) * pageSize, candidaturasVisiveis.length)} de{" "}
-            {candidaturasVisiveis.length} candidaturas
-            {statusOff.size > 0 && <span> (filtro: {STATUS_KEYS.filter((s) => !statusOff.has(s)).join(", ")})</span>}
+            Mostrando {pageRows.length === 0 ? 0 : currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, candidaturas.length)} de{" "}
+            {candidaturas.length} candidaturas
           </span>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              disabled={page === 0}
+              disabled={currentPage === 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               className="flex h-7 w-7 items-center justify-center rounded-lg border disabled:opacity-30"
               style={{ borderColor: "var(--border-hairline)" }}
@@ -392,11 +488,11 @@ function FunilAvaliacao({ candidaturas, programas }) {
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>
             <span className="tabular font-semibold" style={{ color: "var(--ink-secondary)" }}>
-              {page + 1} / {totalPages}
+              {totalPages === 0 ? 0 : currentPage + 1} / {totalPages}
             </span>
             <button
               type="button"
-              disabled={page >= totalPages - 1}
+              disabled={currentPage >= totalPages - 1}
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               className="flex h-7 w-7 items-center justify-center rounded-lg border disabled:opacity-30"
               style={{ borderColor: "var(--border-hairline)" }}
@@ -410,7 +506,7 @@ function FunilAvaliacao({ candidaturas, programas }) {
   );
 }
 
-function DemandaAtratividade({ candidaturas, programas }) {
+function DemandaAtratividade({ candidaturas, programas, filters, toggleFilterValue }) {
   const porOrdem = useMemo(() => {
     const map = new Map([
       ["1ª opção", 0],
@@ -421,6 +517,8 @@ function DemandaAtratividade({ candidaturas, programas }) {
     for (const c of candidaturas) map.set(c.ordem_preferencia, (map.get(c.ordem_preferencia) || 0) + 1);
     return [...map.entries()].map(([name, value]) => ({ name, value }));
   }, [candidaturas]);
+
+  const totalOrdem = porOrdem.reduce((acc, o) => acc + o.value, 0);
 
   const concorrencia = useMemo(() => {
     const map = new Map();
@@ -438,22 +536,49 @@ function DemandaAtratividade({ candidaturas, programas }) {
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <ChartCard title="Ordem de preferência pela UEA" subtitle="Em que posição do edital a UEA foi escolhida">
+      <ChartCard title="Ordem de preferência pela UEA" subtitle="Em que posição do edital a UEA foi escolhida — clique numa fatia para filtrar">
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer>
             <PieChart>
-              <Pie data={porOrdem} dataKey="value" nameKey="name" innerRadius={64} outerRadius={104} paddingAngle={2}>
-                {porOrdem.map((_, i) => (
-                  <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />
+              <Pie
+                data={porOrdem}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={64}
+                outerRadius={104}
+                paddingAngle={2}
+                cursor="pointer"
+                onClick={(entry) => toggleFilterValue("ordem", entry.name)}
+              >
+                {porOrdem.map((entry, i) => (
+                  <Cell
+                    key={i}
+                    fill={CAT_COLORS[i % CAT_COLORS.length]}
+                    opacity={filters.ordem === "todos" || filters.ordem === entry.name ? 1 : 0.3}
+                  />
                 ))}
               </Pie>
-              <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: 12 }} />
+              <Legend
+                verticalAlign="bottom"
+                wrapperStyle={{ fontSize: 12, cursor: "pointer" }}
+                onClick={(entry) => toggleFilterValue("ordem", entry.value)}
+                formatter={(value) => (
+                  <span
+                    style={{
+                      color: filters.ordem === value ? "var(--ink-primary)" : "var(--ink-muted)",
+                      fontWeight: filters.ordem === value ? 700 : 500,
+                    }}
+                  >
+                    {value}
+                  </span>
+                )}
+              />
               <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--border-hairline)", fontSize: 12, background: "var(--surface-panel)" }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
         <p className="mt-2 text-center text-xs" style={{ color: "var(--ink-muted)" }}>
-          {porOrdem[0] && `${((porOrdem[0].value / candidaturas.length) * 100).toFixed(0)}% escolheram a UEA como 1ª opção`}
+          {totalOrdem > 0 && porOrdem[0] && `${((porOrdem[0].value / totalOrdem) * 100).toFixed(0)}% escolheram a UEA como 1ª opção`}
         </p>
       </ChartCard>
 
@@ -481,9 +606,10 @@ function DemandaAtratividade({ candidaturas, programas }) {
   );
 }
 
-function SplitStat({ label, a, b, colorA = "var(--accent)", colorB = "var(--border-strong)" }) {
+function SplitStat({ label, a, b, colorA = "var(--accent)", colorB = "var(--border-strong)", onClickA, onClickB, activeA, activeB }) {
   const total = a.value + b.value;
   const pctA = total ? Math.round((a.value / total) * 100) : 0;
+  const dim = (isThisActive, otherActive) => (otherActive && !isThisActive ? 0.35 : 1);
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between text-xs font-semibold" style={{ color: "var(--ink-secondary)" }}>
@@ -493,14 +619,30 @@ function SplitStat({ label, a, b, colorA = "var(--accent)", colorB = "var(--bord
         </span>
       </div>
       <div className="flex h-3 overflow-hidden rounded-full" style={{ background: "var(--surface-alt)" }}>
-        <div style={{ width: `${pctA}%`, background: colorA }} />
-        <div style={{ width: `${100 - pctA}%`, background: colorB }} />
+        <div
+          onClick={onClickA}
+          className={onClickA ? "cursor-pointer transition-opacity" : ""}
+          style={{ width: `${pctA}%`, background: colorA, opacity: dim(activeA, activeB) }}
+        />
+        <div
+          onClick={onClickB}
+          className={onClickB ? "cursor-pointer transition-opacity" : ""}
+          style={{ width: `${100 - pctA}%`, background: colorB, opacity: dim(activeB, activeA) }}
+        />
       </div>
-      <div className="mt-1.5 flex justify-between text-[11px]" style={{ color: "var(--ink-muted)" }}>
-        <span>
+      <div className="mt-1.5 flex justify-between text-[11px]">
+        <span
+          onClick={onClickA}
+          className={onClickA ? "cursor-pointer" : ""}
+          style={{ color: activeA ? "var(--ink-primary)" : "var(--ink-muted)", fontWeight: activeA ? 700 : 400 }}
+        >
           {a.label} · {pctA}%
         </span>
-        <span>
+        <span
+          onClick={onClickB}
+          className={onClickB ? "cursor-pointer" : ""}
+          style={{ color: activeB ? "var(--ink-primary)" : "var(--ink-muted)", fontWeight: activeB ? 700 : 400 }}
+        >
           {b.label} · {100 - pctA}%
         </span>
       </div>
@@ -508,7 +650,7 @@ function SplitStat({ label, a, b, colorA = "var(--accent)", colorB = "var(--bord
   );
 }
 
-function PerfilCandidatos({ candidatos }) {
+function PerfilCandidatos({ candidatos, filters, toggleFilterValue }) {
   const porPais = useMemo(() => {
     const map = new Map();
     for (const c of candidatos) map.set(c.pais_origem, (map.get(c.pais_origem) || 0) + 1);
@@ -519,13 +661,7 @@ function PerfilCandidatos({ candidatos }) {
   }, [candidatos]);
 
   const porFaixaEtaria = useMemo(() => {
-    const buckets = [
-      { name: "18–24", min: 18, max: 24, value: 0 },
-      { name: "25–29", min: 25, max: 29, value: 0 },
-      { name: "30–34", min: 30, max: 34, value: 0 },
-      { name: "35–39", min: 35, max: 39, value: 0 },
-      { name: "40+", min: 40, max: 200, value: 0 },
-    ];
+    const buckets = FAIXAS_ETARIAS.map((f) => ({ ...f, value: 0 }));
     for (const c of candidatos) {
       const b = buckets.find((x) => c.idade >= x.min && c.idade <= x.max);
       if (b) b.value += 1;
@@ -545,7 +681,7 @@ function PerfilCandidatos({ candidatos }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Principais países de origem" subtitle="Top 10 no recorte filtrado atual">
+        <ChartCard title="Principais países de origem" subtitle="Top 10 no recorte filtrado atual — clique numa barra para filtrar">
           <div style={{ width: "100%", height: 320 }}>
             <ResponsiveContainer>
               <BarChart data={porPais} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
@@ -553,9 +689,13 @@ function PerfilCandidatos({ candidatos }) {
                 <XAxis type="number" tick={{ fontSize: 11, fill: "var(--ink-muted)" }} axisLine={{ stroke: "var(--border-hairline)" }} tickLine={false} />
                 <YAxis dataKey="pais" type="category" width={120} tick={{ fontSize: 11, fill: "var(--ink-secondary)", fontWeight: 600 }} axisLine={{ stroke: "var(--border-hairline)" }} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--border-hairline)", fontSize: 12, background: "var(--surface-panel)" }} />
-                <Bar dataKey="total" radius={[0, 6, 6, 0]}>
-                  {porPais.map((_, i) => (
-                    <Cell key={i} fill={i === 0 ? CHART_HEX.gold : CHART_HEX.accent} />
+                <Bar dataKey="total" radius={[0, 6, 6, 0]} cursor="pointer" onClick={(data) => toggleFilterValue("pais", data.pais)}>
+                  {porPais.map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill={i === 0 ? CHART_HEX.gold : CHART_HEX.accent}
+                      opacity={filters.pais === "todos" || filters.pais === entry.pais ? 1 : 0.3}
+                    />
                   ))}
                 </Bar>
               </BarChart>
@@ -563,7 +703,7 @@ function PerfilCandidatos({ candidatos }) {
           </div>
         </ChartCard>
 
-        <ChartCard title="Faixa etária" subtitle="Distribuição por idade estimada">
+        <ChartCard title="Faixa etária" subtitle="Distribuição por idade estimada — clique numa barra para filtrar">
           <div style={{ width: "100%", height: 320 }}>
             <ResponsiveContainer>
               <BarChart data={porFaixaEtaria} margin={{ left: 0, right: 8, top: 8, bottom: 4 }}>
@@ -571,7 +711,15 @@ function PerfilCandidatos({ candidatos }) {
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--ink-muted)" }} axisLine={{ stroke: "var(--border-hairline)" }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "var(--ink-muted)" }} axisLine={{ stroke: "var(--border-hairline)" }} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--border-hairline)", fontSize: 12, background: "var(--surface-panel)" }} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} fill={CHART_HEX.accent} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]} cursor="pointer" onClick={(data) => toggleFilterValue("faixa", data.name)}>
+                  {porFaixaEtaria.map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill={CHART_HEX.accent}
+                      opacity={filters.faixa === "todos" || filters.faixa === entry.name ? 1 : 0.3}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -586,13 +734,35 @@ function PerfilCandidatos({ candidatos }) {
             b={{ label: "Masculino", value: sexoM }}
             colorA="var(--gold)"
             colorB="var(--accent)"
+            onClickA={() => toggleFilterValue("sexo", "Feminino")}
+            onClickB={() => toggleFilterValue("sexo", "Masculino")}
+            activeA={filters.sexo === "Feminino"}
+            activeB={filters.sexo === "Masculino"}
           />
         </ChartCard>
         <ChartCard title="Professor(a) universitário(a)">
-          <SplitStat label="Vínculo docente" a={{ label: "Sim", value: profSim }} b={{ label: "Não", value: profNao }} />
+          <SplitStat
+            label="Vínculo docente"
+            a={{ label: "Sim", value: profSim }}
+            b={{ label: "Não", value: profNao }}
+            onClickA={() => toggleFilterValue("professor", "Sim")}
+            onClickB={() => toggleFilterValue("professor", "Não")}
+            activeA={filters.professor === "Sim"}
+            activeB={filters.professor === "Não"}
+          />
         </ChartCard>
         <ChartCard title="Instituição de origem">
-          <SplitStat label="Tipo" a={{ label: "Pública", value: instPublica }} b={{ label: "Privada", value: instPrivada }} colorA="var(--accent)" colorB="var(--gold)" />
+          <SplitStat
+            label="Tipo"
+            a={{ label: "Pública", value: instPublica }}
+            b={{ label: "Privada", value: instPrivada }}
+            colorA="var(--accent)"
+            colorB="var(--gold)"
+            onClickA={() => toggleFilterValue("instituicao", "Pública")}
+            onClickB={() => toggleFilterValue("instituicao", "Privada")}
+            activeA={filters.instituicao === "Pública"}
+            activeB={filters.instituicao === "Privada"}
+          />
         </ChartCard>
       </div>
 
@@ -620,23 +790,47 @@ function PerfilCandidatos({ candidatos }) {
 
 export default function App() {
   const [tab, setTab] = useState("visao-geral");
-  const [programaFiltro, setProgramaFiltro] = useState("todos");
-  const [nivelFiltro, setNivelFiltro] = useState("todos");
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
-  const candidaturasFiltradas = useMemo(() => {
-    return DATASET.candidaturas.filter((c) => {
-      if (programaFiltro !== "todos" && String(c.programa_uea_id) !== programaFiltro) return false;
-      if (nivelFiltro !== "todos" && c.nivel !== nivelFiltro) return false;
+  const setFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: value }));
+  const toggleFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: f[key] === value ? "todos" : value }));
+  const clearFilters = () => setFilters(DEFAULT_FILTERS);
+  const hasActiveFilters = Object.values(filters).some((v) => v !== "todos");
+
+  // Filtros por candidato (país, sexo, faixa etária, professor, instituição)
+  const candidatosBase = useMemo(() => {
+    return DATASET.candidatos.filter((c) => {
+      if (filters.pais !== "todos" && c.pais_origem !== filters.pais) return false;
+      if (filters.sexo !== "todos" && c.sexo !== filters.sexo) return false;
+      if (filters.professor !== "todos" && (c.e_professor_universitario ? "Sim" : "Não") !== filters.professor) return false;
+      if (filters.instituicao !== "todos" && c.tipo_instituicao !== filters.instituicao) return false;
+      if (filters.faixa !== "todos") {
+        const b = FAIXAS_ETARIAS.find((f) => f.name === filters.faixa);
+        if (!b || c.idade < b.min || c.idade > b.max) return false;
+      }
       return true;
     });
-  }, [programaFiltro, nivelFiltro]);
+  }, [filters.pais, filters.sexo, filters.professor, filters.instituicao, filters.faixa]);
+
+  const candidatosBaseIds = useMemo(() => new Set(candidatosBase.map((c) => c.id)), [candidatosBase]);
+
+  // Filtros por candidatura (programa, nível, status, ordem de preferência)
+  // combinados com o recorte de candidatos acima.
+  const candidaturasFiltradas = useMemo(() => {
+    return DATASET.candidaturas.filter((c) => {
+      if (!candidatosBaseIds.has(c.candidato_id)) return false;
+      if (filters.programa !== "todos" && String(c.programa_uea_id) !== filters.programa) return false;
+      if (filters.nivel !== "todos" && c.nivel !== filters.nivel) return false;
+      if (filters.status !== "todos" && c.decisao !== filters.status) return false;
+      if (filters.ordem !== "todos" && c.ordem_preferencia !== filters.ordem) return false;
+      return true;
+    });
+  }, [candidatosBaseIds, filters.programa, filters.nivel, filters.status, filters.ordem]);
 
   const candidatosFiltrados = useMemo(() => {
     const ids = new Set(candidaturasFiltradas.map((c) => c.candidato_id));
-    return DATASET.candidatos.filter((c) => ids.has(c.id));
-  }, [candidaturasFiltradas]);
-
-  const candidatosUnicos = useMemo(() => new Set(candidaturasFiltradas.map((c) => c.candidato_id)), [candidaturasFiltradas]);
+    return candidatosBase.filter((c) => ids.has(c.id));
+  }, [candidatosBase, candidaturasFiltradas]);
 
   return (
     <div className="flex min-h-screen" style={{ background: "var(--surface-page)" }}>
@@ -692,7 +886,7 @@ export default function App() {
       </aside>
 
       <main className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8">
-        <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <header className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-xl font-extrabold" style={{ color: "var(--ink-primary)" }}>
               {NAV_ITEMS.find((n) => n.id === tab)?.label}
@@ -703,19 +897,38 @@ export default function App() {
           </div>
           <GlobalFilters
             programas={DATASET.programas}
-            programaFiltro={programaFiltro}
-            setProgramaFiltro={setProgramaFiltro}
-            nivelFiltro={nivelFiltro}
-            setNivelFiltro={setNivelFiltro}
+            filters={filters}
+            setFilterValue={setFilterValue}
+            clearFilters={clearFilters}
+            hasActiveFilters={hasActiveFilters}
           />
         </header>
 
+        <FilterChips filters={filters} programas={DATASET.programas} setFilterValue={setFilterValue} />
+
         {tab === "visao-geral" && (
-          <VisaoGeral candidaturas={candidaturasFiltradas} candidatosUnicos={candidatosUnicos} programas={DATASET.programas} />
+          <VisaoGeral candidaturas={candidaturasFiltradas} candidatos={candidatosFiltrados} programas={DATASET.programas} />
         )}
-        {tab === "funil" && <FunilAvaliacao candidaturas={candidaturasFiltradas} programas={DATASET.programas} />}
-        {tab === "demanda" && <DemandaAtratividade candidaturas={candidaturasFiltradas} programas={DATASET.programas} />}
-        {tab === "perfil" && <PerfilCandidatos candidatos={candidatosFiltrados} />}
+        {tab === "funil" && (
+          <FunilAvaliacao
+            candidaturas={candidaturasFiltradas}
+            programas={DATASET.programas}
+            filters={filters}
+            setFilterValue={setFilterValue}
+            toggleFilterValue={toggleFilterValue}
+          />
+        )}
+        {tab === "demanda" && (
+          <DemandaAtratividade
+            candidaturas={candidaturasFiltradas}
+            programas={DATASET.programas}
+            filters={filters}
+            toggleFilterValue={toggleFilterValue}
+          />
+        )}
+        {tab === "perfil" && (
+          <PerfilCandidatos candidatos={candidatosFiltrados} filters={filters} toggleFilterValue={toggleFilterValue} />
+        )}
       </main>
     </div>
   );

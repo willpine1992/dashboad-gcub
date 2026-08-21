@@ -229,28 +229,50 @@ function VisaoGeral({ candidaturas, candidatosUnicos, programas }) {
   );
 }
 
+const STATUS_KEYS = ["Pendente", "Aceito", "Recusado"];
+
 function FunilAvaliacao({ candidaturas, programas }) {
   const [page, setPage] = useState(0);
+  const [statusOff, setStatusOff] = useState(() => new Set());
   const pageSize = 8;
+
+  const toggleStatus = (status) => {
+    setStatusOff((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+    setPage(0);
+  };
+
+  const candidaturasVisiveis = useMemo(
+    () => candidaturas.filter((c) => !statusOff.has(c.decisao)),
+    [candidaturas, statusOff]
+  );
 
   const porProgramaStatus = useMemo(() => {
     const map = new Map();
     for (const p of programas) map.set(p.sigla, { sigla: p.sigla, Pendente: 0, Aceito: 0, Recusado: 0 });
-    for (const c of candidaturas) {
+    for (const c of candidaturasVisiveis) {
       const row = map.get(c.programa_uea_sigla);
       if (row) row[c.decisao] += 1;
     }
     return [...map.values()]
       .filter((r) => r.Pendente + r.Aceito + r.Recusado > 0)
       .sort((a, b) => b.Pendente + b.Aceito + b.Recusado - (a.Pendente + a.Aceito + a.Recusado));
-  }, [candidaturas, programas]);
+  }, [candidaturasVisiveis, programas]);
 
-  const totalPages = Math.max(1, Math.ceil(candidaturas.length / pageSize));
-  const pageRows = candidaturas.slice(page * pageSize, page * pageSize + pageSize);
+  const totalPages = Math.max(1, Math.ceil(candidaturasVisiveis.length / pageSize));
+  const pageRows = candidaturasVisiveis.slice(page * pageSize, page * pageSize + pageSize);
+  const lastVisibleKey = [...STATUS_KEYS].reverse().find((s) => !statusOff.has(s));
 
   return (
     <div className="flex flex-col gap-6">
-      <ChartCard title="Status das candidaturas por programa" subtitle="Pendente vs. Aceito vs. Recusado">
+      <ChartCard
+        title="Status das candidaturas por programa"
+        subtitle="Pendente vs. Aceito vs. Recusado — clique na legenda para filtrar"
+      >
         <div style={{ width: "100%", height: Math.max(320, porProgramaStatus.length * 34) }}>
           <ResponsiveContainer>
             <BarChart data={porProgramaStatus} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }} barCategoryGap={10}>
@@ -267,10 +289,29 @@ function FunilAvaliacao({ candidaturas, programas }) {
               <Tooltip
                 contentStyle={{ borderRadius: 12, border: "1px solid var(--border-hairline)", fontSize: 12, background: "var(--surface-panel)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="Pendente" stackId="s" fill={STATUS_HEX.Pendente} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="Aceito" stackId="s" fill={STATUS_HEX.Aceito} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="Recusado" stackId="s" fill={STATUS_HEX.Recusado} radius={[0, 4, 4, 0]} />
+              <Legend
+                onClick={(entry) => toggleStatus(entry.value)}
+                wrapperStyle={{ fontSize: 12, cursor: "pointer" }}
+                formatter={(value) => (
+                  <span
+                    style={{
+                      color: statusOff.has(value) ? "var(--ink-muted)" : "var(--ink-secondary)",
+                      textDecoration: statusOff.has(value) ? "line-through" : "none",
+                    }}
+                  >
+                    {value}
+                  </span>
+                )}
+              />
+              {STATUS_KEYS.map((status) => (
+                <Bar
+                  key={status}
+                  dataKey={status}
+                  stackId="s"
+                  fill={STATUS_HEX[status]}
+                  radius={status === lastVisibleKey ? [0, 4, 4, 0] : [0, 0, 0, 0]}
+                />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -336,7 +377,9 @@ function FunilAvaliacao({ candidaturas, programas }) {
 
         <div className="mt-4 flex items-center justify-between text-xs" style={{ color: "var(--ink-muted)" }}>
           <span>
-            Mostrando {page * pageSize + 1}–{Math.min((page + 1) * pageSize, candidaturas.length)} de {candidaturas.length} candidaturas
+            Mostrando {pageRows.length === 0 ? 0 : page * pageSize + 1}–{Math.min((page + 1) * pageSize, candidaturasVisiveis.length)} de{" "}
+            {candidaturasVisiveis.length} candidaturas
+            {statusOff.size > 0 && <span> (filtro: {STATUS_KEYS.filter((s) => !statusOff.has(s)).join(", ")})</span>}
           </span>
           <div className="flex items-center gap-2">
             <button

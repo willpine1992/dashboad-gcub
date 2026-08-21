@@ -20,6 +20,7 @@ import {
   Mail,
   Copy,
   Check,
+  UserRound,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -396,7 +397,141 @@ function PpgEmailsList({ candidaturas, programas }) {
   );
 }
 
-function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, toggleFilterValue }) {
+function DecisionButtons({ current, onDecide }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => onDecide("Aceito")}
+        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors"
+        style={{
+          background: current === "Aceito" ? "var(--status-aceito)" : "var(--status-aceito-soft)",
+          color: current === "Aceito" ? "var(--ink-on-accent)" : "var(--status-aceito)",
+        }}
+      >
+        Aceitar
+      </button>
+      <button
+        type="button"
+        onClick={() => onDecide("Recusado")}
+        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors"
+        style={{
+          background: current === "Recusado" ? "var(--status-recusado)" : "var(--status-recusado-soft)",
+          color: current === "Recusado" ? "var(--ink-on-accent)" : "var(--status-recusado)",
+        }}
+      >
+        Recusar
+      </button>
+    </div>
+  );
+}
+
+function PerfilCandidatosList({ candidaturas, getDecisao, setDecisao }) {
+  const [page, setPage] = useState(0);
+  const pageSize = 8;
+
+  useEffect(() => {
+    setPage(0);
+  }, [candidaturas]);
+
+  const totalPages = Math.max(1, Math.ceil(candidaturas.length / pageSize));
+  const currentPage = Math.min(page, totalPages - 1);
+  const pageRows = candidaturas.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
+
+  const abrirPerfil = (c) => {
+    alert(
+      `Simulação — abriria a ficha de ${c.candidato_nome} em\n` +
+        `https://mob.gcub.org.br/ie/avaliar-candidato.php?id=${c.candidato_id}&programa=${c.programa_uea_id}\n\n` +
+        `(página real do GCUB-MOB, com o painel "Decisão da Instituição: Aceitar / Recusar" no final).`
+    );
+  };
+
+  return (
+    <ChartCard
+      title="Perfis dos candidatos"
+      subtitle="Link direto para a ficha de avaliação — mesmo painel de Aceitar/Recusar do GCUB-MOB"
+    >
+      {candidaturas.length === 0 ? (
+        <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
+          Nenhuma candidatura no recorte filtrado atual.
+        </p>
+      ) : (
+        <>
+          <div className="flex flex-col divide-y" style={{ borderColor: "var(--border-hairline)" }}>
+            {pageRows.map((c) => (
+              <div
+                key={c.id}
+                className="flex flex-col gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                style={{ borderColor: "var(--border-hairline)" }}
+              >
+                <button
+                  type="button"
+                  onClick={() => abrirPerfil(c)}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left transition-colors"
+                >
+                  <span
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: "var(--accent-soft)" }}
+                  >
+                    <UserRound className="h-3.5 w-3.5" style={{ color: "var(--accent-strong)" }} />
+                  </span>
+                  <span className="min-w-0">
+                    <span
+                      className="block truncate text-sm font-semibold underline decoration-dotted underline-offset-2"
+                      style={{ color: "var(--accent-strong)" }}
+                    >
+                      {c.candidato_nome}
+                    </span>
+                    <span className="block text-xs" style={{ color: "var(--ink-muted)" }}>
+                      {c.pais_origem} · {c.programa_uea_sigla}
+                    </span>
+                  </span>
+                </button>
+
+                <div className="flex shrink-0 items-center gap-2.5 sm:pl-3">
+                  <StatusBadge status={getDecisao(c)} />
+                  <DecisionButtons current={getDecisao(c)} onDecide={(d) => setDecisao(c.id, d)} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between text-xs" style={{ color: "var(--ink-muted)" }}>
+            <span>
+              Mostrando {currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, candidaturas.length)} de{" "}
+              {candidaturas.length} candidaturas
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage === 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border disabled:opacity-30"
+                style={{ borderColor: "var(--border-hairline)" }}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <span className="tabular font-semibold" style={{ color: "var(--ink-secondary)" }}>
+                {currentPage + 1} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages - 1}
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border disabled:opacity-30"
+                style={{ borderColor: "var(--border-hairline)" }}
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </ChartCard>
+  );
+}
+
+function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, toggleFilterValue, getDecisao, setDecisao }) {
   const [page, setPage] = useState(0);
   const pageSize = 8;
 
@@ -539,7 +674,7 @@ function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, togg
                     {c.programa_uea_sigla}
                   </td>
                   <td className="border-b py-2.5 pr-3" style={{ borderColor: "var(--border-hairline)" }}>
-                    <StatusBadge status={c.decisao} />
+                    <StatusBadge status={getDecisao(c)} />
                   </td>
                   {c.documentos.map((d) => (
                     <td key={d.tipo} className="border-b py-2.5 pr-3 text-center" style={{ borderColor: "var(--border-hairline)" }}>
@@ -601,6 +736,8 @@ function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, togg
       </ChartCard>
 
       <PpgEmailsList candidaturas={candidaturas} programas={programas} />
+
+      <PerfilCandidatosList candidaturas={candidaturas} getDecisao={getDecisao} setDecisao={setDecisao} />
     </div>
   );
 }
@@ -890,11 +1027,20 @@ function PerfilCandidatos({ candidatos, filters, toggleFilterValue }) {
 export default function App() {
   const [tab, setTab] = useState("visao-geral");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  // Decisões (Aceitar/Recusar) feitas ao vivo no protótipo, por id de
+  // candidatura — sobrepõem o decisao_lista original só na sessão atual
+  // (não persiste, não mexe em DATASET). Fica no App (não no FunilAvaliacao)
+  // pra sobreviver à troca de aba.
+  const [decisaoOverrides, setDecisaoOverrides] = useState({});
 
   const setFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: value }));
   const toggleFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: f[key] === value ? "todos" : value }));
   const clearFilters = () => setFilters(DEFAULT_FILTERS);
   const hasActiveFilters = Object.values(filters).some((v) => v !== "todos");
+
+  const getDecisao = (c) => decisaoOverrides[c.id] ?? c.decisao;
+  const setDecisao = (candidaturaId, decisao) =>
+    setDecisaoOverrides((prev) => ({ ...prev, [candidaturaId]: decisao }));
 
   // Filtros por candidato (país, sexo, faixa etária, professor, instituição)
   const candidatosBase = useMemo(() => {
@@ -1015,6 +1161,8 @@ export default function App() {
             filters={filters}
             setFilterValue={setFilterValue}
             toggleFilterValue={toggleFilterValue}
+            getDecisao={getDecisao}
+            setDecisao={setDecisao}
           />
         )}
         {tab === "demanda" && (

@@ -8,13 +8,16 @@ acento dourado, superfícies claras, cantos arredondados generosos.
 
 **🔗 Site publicado:** https://willpine1992.github.io/dashboad-gcub/
 
-> ⚠️ **Dados fictícios.** Nomes, e-mails e documentos de candidatos são
-> gerados em `src/mockData.js` para simular o funcionamento das telas — a
-> forma da distribuição (países, volume por programa) segue a proporção
-> observada na raspagem real do edital, mas nenhum candidato real aparece
-> aqui. **Exceção:** os e-mails de contato dos PPGs (aba Funil de
-> Avaliação) são reais, vindos de `WEBSCRAPING/GCUB/db/gcub.db`
-> (tabelas `ppgs_uea`/`ppgs_uea_emails`).
+> ⚠️ **Publicado (GitHub Pages) = sempre dados fictícios.** Nomes, e-mails
+> pessoais e documentos de candidatos em `docs/index.html` vêm de
+> `src/mockData.js` — a forma da distribuição (países, volume por
+> programa) segue a proporção real, mas nenhum candidato real aparece no
+> site publicado. **Rodando em `localhost` (`npm run dev`)**, o painel
+> carrega automaticamente os dados **reais** de
+> `WEBSCRAPING/GCUB/db/gcub.db` quando disponíveis — ver seção
+> [Dados reais (localhost)](#dados-reais-localhost) abaixo. Um selo no
+> canto superior esquerdo ("Dados reais" / "Protótipo") sempre mostra
+> qual dos dois está em tela.
 
 ## Telas
 
@@ -37,28 +40,46 @@ externas além de código já embutido.
 ```
 DASHBOARD GCUB/
 ├── src/
-│   ├── mockData.js   # gerador dos dados fictícios (schema espelha GCUB/db/gcub.db)
-│   ├── App.jsx        # componente único: layout, filtros, 4 abas, gráficos
-│   └── index.css      # tokens de cor (claro/escuro) + Tailwind
-├── docs/              # build publicado (GitHub Pages, pasta docs/)
-└── vite.config.js
+│   ├── mockData.js   # gerador dos dados fictícios (usado no build publicado)
+│   ├── data.js         # decide fictício vs. real (ver seção abaixo)
+│   ├── App.jsx         # componente único: layout, filtros, 4 abas, gráficos
+│   └── index.css       # tokens de cor (claro/escuro) + Tailwind
+├── docs/                # build publicado (GitHub Pages, pasta docs/) — sempre fictício
+└── vite.config.js        # inclui o middleware dev-only que serve o dado real
 ```
 
 ## Rodar localmente
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm run build       # gera docs/index.html (publicado via GitHub Pages)
+npm run dev         # http://localhost:5173 — usa dado real se disponível, senão fictício
+npm run build        # gera docs/index.html (publicado via GitHub Pages) — SEMPRE fictício
 ```
 
-## Dados reais (próximo passo)
+## Dados reais (localhost)
 
-O schema fictício em `mockData.js` espelha as tabelas reais em
-`WEBSCRAPING/GCUB/db/gcub.db` (`candidatos`, `candidaturas_uea`,
-`programas_escolhidos`, `documentos_anexados`, `programas_uea`). Para
-plugar dados reais, trocar o import de `./mockData` por um JSON exportado
-desse banco (mesmo padrão de `DASHBOARD 2/etl/export_dashboard_data.py`) —
-tomando cuidado para **agregar/anonimizar** antes de publicar, já que o
-banco real contém dados pessoais de candidatos (ver
-`WEBSCRAPING/GCUB/README.txt`, seção 4).
+Rodando `npm run dev`, o painel busca `GET /api/real-data` — uma rota que
+só existe em desenvolvimento (`vite.config.js`, plugin `realDataDevServer`,
+hook `configureServer` — **não roda em `npm run build`**, então dado real
+nunca é lido nem embutido no bundle publicado). Essa rota serve o conteúdo
+de `WEBSCRAPING/GCUB/db/dashboard_real_data.json`, um JSON exportado do
+banco real (`WEBSCRAPING/GCUB/db/gcub.db`) no mesmo formato de
+`mockData.js`.
+
+Pra gerar/atualizar esse JSON depois de rodar o scraper de novo:
+
+```bash
+cd "../WEBSCRAPING/GCUB"
+./venv/bin/python etl/export_for_dashboard.py
+```
+
+Se esse arquivo não existir (ex.: clone novo, sem rodar o scraper ainda),
+`npm run dev` cai automaticamente nos dados fictícios — nada quebra, só
+aparece "Protótipo" no lugar de "Dados reais" no topo da tela.
+
+**Onde fica o arquivo e por quê:** `dashboard_real_data.json` é gerado
+*fora* desta pasta (em `WEBSCRAPING/GCUB/db/`, gitignored lá) — de
+propósito, pra não ter nenhum risco de um `git add -A` aqui dentro varrer
+dado real de candidato pro repositório público. Contém nome completo, país,
+idade e decisão de ~1.930 candidatos reais — **nunca compartilhe prints
+nem publique enquanto estiver em modo "Dados reais".**

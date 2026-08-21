@@ -20,6 +20,8 @@ import {
   Mail,
   Copy,
   Check,
+  Database,
+  FlaskConical,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -34,7 +36,7 @@ import {
   Pie,
   Legend,
 } from "recharts";
-import { DATASET, PPGS_EMAILS } from "./mockData";
+import { loadDataset } from "./data";
 
 // Cores fixas (hex) para marcas de gráfico: atributos de apresentação SVG
 // (fill/stroke) não resolvem var() no Chrome — só funciona dentro de
@@ -302,7 +304,7 @@ function VisaoGeral({ candidaturas, candidatos, programas }) {
   );
 }
 
-function PpgEmailsList({ candidaturas, programas }) {
+function PpgEmailsList({ candidaturas, programas, ppgsEmails }) {
   const [copied, setCopied] = useState(false);
 
   const programasFiltrados = useMemo(() => {
@@ -311,11 +313,11 @@ function PpgEmailsList({ candidaturas, programas }) {
       .filter((p) => idsPresentes.has(p.id))
       .map((p) => ({
         ...p,
-        emails: PPGS_EMAILS[p.id] || [],
+        emails: ppgsEmails[p.id] || [],
         total: candidaturas.filter((c) => c.programa_uea_id === p.id).length,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [candidaturas, programas]);
+  }, [candidaturas, programas, ppgsEmails]);
 
   const todosEmails = useMemo(() => [...new Set(programasFiltrados.flatMap((p) => p.emails))], [programasFiltrados]);
 
@@ -510,7 +512,7 @@ function PerfilCandidatosList({ candidaturas }) {
   );
 }
 
-function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, toggleFilterValue }) {
+function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, toggleFilterValue, ppgsEmails }) {
   const [page, setPage] = useState(0);
   const pageSize = 8;
 
@@ -714,7 +716,7 @@ function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, togg
         </div>
       </ChartCard>
 
-      <PpgEmailsList candidaturas={candidaturas} programas={programas} />
+      <PpgEmailsList candidaturas={candidaturas} programas={programas} ppgsEmails={ppgsEmails} />
 
       <PerfilCandidatosList candidaturas={candidaturas} />
     </div>
@@ -1006,15 +1008,31 @@ function PerfilCandidatos({ candidatos, filters, toggleFilterValue }) {
 export default function App() {
   const [tab, setTab] = useState("visao-geral");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [dataInfo, setDataInfo] = useState(null);
+
+  useEffect(() => {
+    let ativo = true;
+    loadDataset().then((info) => {
+      if (ativo) setDataInfo(info);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const setFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: value }));
   const toggleFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: f[key] === value ? "todos" : value }));
   const clearFilters = () => setFilters(DEFAULT_FILTERS);
   const hasActiveFilters = Object.values(filters).some((v) => v !== "todos");
 
+  const dataset = dataInfo?.dataset;
+  const ppgsEmails = dataInfo?.ppgsEmails ?? {};
+  const isReal = dataInfo?.isReal ?? false;
+
   // Filtros por candidato (país, sexo, faixa etária, professor, instituição)
   const candidatosBase = useMemo(() => {
-    return DATASET.candidatos.filter((c) => {
+    if (!dataset) return [];
+    return dataset.candidatos.filter((c) => {
       if (filters.pais !== "todos" && c.pais_origem !== filters.pais) return false;
       if (filters.sexo !== "todos" && c.sexo !== filters.sexo) return false;
       if (filters.professor !== "todos" && (c.e_professor_universitario ? "Sim" : "Não") !== filters.professor) return false;
@@ -1025,14 +1043,15 @@ export default function App() {
       }
       return true;
     });
-  }, [filters.pais, filters.sexo, filters.professor, filters.instituicao, filters.faixa]);
+  }, [dataset, filters.pais, filters.sexo, filters.professor, filters.instituicao, filters.faixa]);
 
   const candidatosBaseIds = useMemo(() => new Set(candidatosBase.map((c) => c.id)), [candidatosBase]);
 
   // Filtros por candidatura (programa, nível, status, ordem de preferência)
   // combinados com o recorte de candidatos acima.
   const candidaturasFiltradas = useMemo(() => {
-    return DATASET.candidaturas.filter((c) => {
+    if (!dataset) return [];
+    return dataset.candidaturas.filter((c) => {
       if (!candidatosBaseIds.has(c.candidato_id)) return false;
       if (filters.programa !== "todos" && String(c.programa_uea_id) !== filters.programa) return false;
       if (filters.nivel !== "todos" && c.nivel !== filters.nivel) return false;
@@ -1040,12 +1059,22 @@ export default function App() {
       if (filters.ordem !== "todos" && c.ordem_preferencia !== filters.ordem) return false;
       return true;
     });
-  }, [candidatosBaseIds, filters.programa, filters.nivel, filters.status, filters.ordem]);
+  }, [dataset, candidatosBaseIds, filters.programa, filters.nivel, filters.status, filters.ordem]);
 
   const candidatosFiltrados = useMemo(() => {
     const ids = new Set(candidaturasFiltradas.map((c) => c.candidato_id));
     return candidatosBase.filter((c) => ids.has(c.id));
   }, [candidatosBase, candidaturasFiltradas]);
+
+  if (!dataInfo) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--surface-page)" }}>
+        <p className="text-sm font-semibold" style={{ color: "var(--ink-muted)" }}>
+          Carregando dados…
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen" style={{ background: "var(--surface-page)" }}>
@@ -1090,12 +1119,24 @@ export default function App() {
           })}
         </nav>
 
-        <div className="mt-auto rounded-xl px-3 py-3" style={{ background: "var(--surface-sidebar-hover)" }}>
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--ink-on-sidebar-muted)" }}>
-            <Globe2 className="h-3 w-3" /> Edital de Mobilidade
+        <div
+          className="mt-auto rounded-xl px-3 py-3"
+          style={{ background: isReal ? "var(--gold-soft)" : "var(--surface-sidebar-hover)" }}
+        >
+          <p
+            className="flex items-center gap-1.5 text-[11px] font-semibold"
+            style={{ color: isReal ? "var(--gold-strong)" : "var(--ink-on-sidebar-muted)" }}
+          >
+            {isReal ? <Database className="h-3 w-3" /> : <FlaskConical className="h-3 w-3" />}
+            {isReal ? "Dados reais (local)" : "Edital de Mobilidade"}
           </p>
-          <p className="mt-1 text-[11px] leading-relaxed" style={{ color: "var(--ink-on-sidebar-muted)" }}>
-            Protótipo com dados fictícios para simulação de layout — não reflete candidatos reais.
+          <p
+            className="mt-1 text-[11px] leading-relaxed"
+            style={{ color: isReal ? "var(--gold-strong)" : "var(--ink-on-sidebar-muted)" }}
+          >
+            {isReal
+              ? `Lido de WEBSCRAPING/GCUB/db/gcub.db (exportado em ${dataInfo.generatedAt}). Contém candidatos reais — não compartilhe telas nem publique.`
+              : "Protótipo com dados fictícios para simulação de layout — não reflete candidatos reais."}
           </p>
         </div>
 
@@ -1107,15 +1148,27 @@ export default function App() {
       <main className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8">
         <header className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-xl font-extrabold" style={{ color: "var(--ink-primary)" }}>
-              {NAV_ITEMS.find((n) => n.id === tab)?.label}
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-extrabold" style={{ color: "var(--ink-primary)" }}>
+                {NAV_ITEMS.find((n) => n.id === tab)?.label}
+              </h1>
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide"
+                style={{
+                  background: isReal ? "var(--gold-soft)" : "var(--accent-soft)",
+                  color: isReal ? "var(--gold-strong)" : "var(--accent-strong)",
+                }}
+              >
+                {isReal ? <Database className="h-3 w-3" /> : <FlaskConical className="h-3 w-3" />}
+                {isReal ? "Dados reais" : "Protótipo"}
+              </span>
+            </div>
             <p className="mt-0.5 text-sm" style={{ color: "var(--ink-muted)" }}>
               Painel de mobilidade internacional · edital GCUB-MOB
             </p>
           </div>
           <GlobalFilters
-            programas={DATASET.programas}
+            programas={dataset.programas}
             filters={filters}
             setFilterValue={setFilterValue}
             clearFilters={clearFilters}
@@ -1123,24 +1176,25 @@ export default function App() {
           />
         </header>
 
-        <FilterChips filters={filters} programas={DATASET.programas} setFilterValue={setFilterValue} />
+        <FilterChips filters={filters} programas={dataset.programas} setFilterValue={setFilterValue} />
 
         {tab === "visao-geral" && (
-          <VisaoGeral candidaturas={candidaturasFiltradas} candidatos={candidatosFiltrados} programas={DATASET.programas} />
+          <VisaoGeral candidaturas={candidaturasFiltradas} candidatos={candidatosFiltrados} programas={dataset.programas} />
         )}
         {tab === "funil" && (
           <FunilAvaliacao
             candidaturas={candidaturasFiltradas}
-            programas={DATASET.programas}
+            programas={dataset.programas}
             filters={filters}
             setFilterValue={setFilterValue}
             toggleFilterValue={toggleFilterValue}
+            ppgsEmails={ppgsEmails}
           />
         )}
         {tab === "demanda" && (
           <DemandaAtratividade
             candidaturas={candidaturasFiltradas}
-            programas={DATASET.programas}
+            programas={dataset.programas}
             filters={filters}
             toggleFilterValue={toggleFilterValue}
           />

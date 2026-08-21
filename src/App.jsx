@@ -17,6 +17,9 @@ import {
   Accessibility,
   Filter,
   X,
+  Mail,
+  Copy,
+  Check,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -31,7 +34,7 @@ import {
   Pie,
   Legend,
 } from "recharts";
-import { DATASET } from "./mockData";
+import { DATASET, PPGS_EMAILS } from "./mockData";
 
 // Cores fixas (hex) para marcas de gráfico: atributos de apresentação SVG
 // (fill/stroke) não resolvem var() no Chrome — só funciona dentro de
@@ -299,6 +302,100 @@ function VisaoGeral({ candidaturas, candidatos, programas }) {
   );
 }
 
+function PpgEmailsList({ candidaturas, programas }) {
+  const [copied, setCopied] = useState(false);
+
+  const programasFiltrados = useMemo(() => {
+    const idsPresentes = new Set(candidaturas.map((c) => c.programa_uea_id));
+    return programas
+      .filter((p) => idsPresentes.has(p.id))
+      .map((p) => ({
+        ...p,
+        emails: PPGS_EMAILS[p.id] || [],
+        total: candidaturas.filter((c) => c.programa_uea_id === p.id).length,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [candidaturas, programas]);
+
+  const todosEmails = useMemo(() => [...new Set(programasFiltrados.flatMap((p) => p.emails))], [programasFiltrados]);
+
+  const copiarTodos = async () => {
+    try {
+      await navigator.clipboard.writeText(todosEmails.join("; "));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard indisponível (ex.: contexto sem permissão) — ignora silenciosamente
+    }
+  };
+
+  return (
+    <ChartCard
+      title="E-mails dos PPGs filtrados"
+      subtitle={`${programasFiltrados.length} programa(s) no recorte atual — contato oficial de coordenação/secretaria`}
+    >
+      {programasFiltrados.length === 0 ? (
+        <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
+          Nenhum programa no recorte filtrado atual.
+        </p>
+      ) : (
+        <>
+          <div className="flex flex-col divide-y" style={{ borderColor: "var(--border-hairline)" }}>
+            {programasFiltrados.map((p) => (
+              <div key={p.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: "var(--border-hairline)" }}>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: "var(--ink-primary)" }}>
+                    {p.sigla}
+                    <span className="ml-2 text-xs font-normal" style={{ color: "var(--ink-muted)" }}>
+                      {p.nome} · {p.nivel} · {p.total} candidatura{p.total === 1 ? "" : "s"}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {p.emails.length === 0 ? (
+                    <span className="text-xs italic" style={{ color: "var(--ink-muted)" }}>
+                      Sem e-mail cadastrado
+                    </span>
+                  ) : (
+                    p.emails.map((email) => (
+                      <a
+                        key={email}
+                        href={`mailto:${email}`}
+                        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors"
+                        style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
+                      >
+                        <Mail className="h-3 w-3" />
+                        {email}
+                      </a>
+                    ))
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {todosEmails.length > 0 && (
+            <div className="mt-4 flex items-center justify-between border-t pt-4" style={{ borderColor: "var(--border-hairline)" }}>
+              <span className="text-xs" style={{ color: "var(--ink-muted)" }}>
+                {todosEmails.length} e-mail{todosEmails.length === 1 ? "" : "s"} único{todosEmails.length === 1 ? "" : "s"} no recorte atual
+              </span>
+              <button
+                type="button"
+                onClick={copiarTodos}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors"
+                style={{ background: copied ? "var(--accent)" : "var(--accent-soft)", color: copied ? "var(--ink-on-accent)" : "var(--accent-strong)" }}
+              >
+                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copied ? "Copiado!" : "Copiar todos os e-mails"}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </ChartCard>
+  );
+}
+
 function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, toggleFilterValue }) {
   const [page, setPage] = useState(0);
   const pageSize = 8;
@@ -502,6 +599,8 @@ function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, togg
           </div>
         </div>
       </ChartCard>
+
+      <PpgEmailsList candidaturas={candidaturas} programas={programas} />
     </div>
   );
 }

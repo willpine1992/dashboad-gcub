@@ -8,18 +8,20 @@ acento dourado, superfícies claras, cantos arredondados generosos.
 
 **🔗 Site publicado:** https://willpine1992.github.io/dashboad-gcub/
 
-> ⚠️ **Dados fictícios.** Todo o conteúdo (nomes, e-mails, contagens) é
-> gerado em `src/mockData.js` para simular o funcionamento das telas. A
+> ⚠️ **Dados fictícios.** Nomes, e-mails e documentos de candidatos são
+> gerados em `src/mockData.js` para simular o funcionamento das telas — a
 > forma da distribuição (países, volume por programa) segue a proporção
-> observada na raspagem real do edital (ver `WEBSCRAPING/GCUB/`), mas
-> nenhum candidato real aparece aqui.
+> observada na raspagem real do edital, mas nenhum candidato real aparece
+> aqui. **Exceção:** os e-mails de contato dos PPGs (aba Funil de
+> Avaliação) são reais, vindos de `WEBSCRAPING/GCUB/db/gcub.db`
+> (tabelas `ppgs_uea`/`ppgs_uea_emails`).
 
 ## Telas
 
 | Aba | Conteúdo |
 |---|---|
 | **Visão Geral** | KPIs (candidatos únicos, candidaturas recebidas, taxa de aceite, pendentes) + ranking dos programas com mais candidaturas |
-| **Funil de Avaliação** | Status (Pendente/Aceito/Recusado) por programa em barras empilhadas + tabela de auditoria de documentos (RG, diploma, histórico, currículo) com paginação e botão simulado "Abrir PDF" |
+| **Funil de Avaliação** | Status (Pendente/Aceito/Recusado) por programa em barras empilhadas + tabela de auditoria de documentos (RG, diploma, histórico, currículo) com paginação e botão simulado "Abrir PDF" + lista de e-mails reais dos PPGs no recorte filtrado, com botão para copiar todos |
 | **Demanda e Atratividade** | Rosca com a ordem de preferência (1ª–4ª opção) pela UEA + barras de concorrência (candidaturas ÷ vagas) por programa |
 | **Perfil dos Candidatos** | Países de origem, faixa etária, sexo, professor(a) universitário(a), tipo de instituição de origem e % de candidatos PCD |
 

@@ -24,6 +24,21 @@ export const PROGRAMAS_UEA = [
   { id: 11, nome: "Biotecnologia e Recursos Naturais da Amazônia", nivel: "Mestrado", sigla: "PPGBIOTEC", vagas: 4 },
 ];
 
+// E-mails reais de contato dos PPGs da UEA (WEBSCRAPING/GCUB/db/gcub.db,
+// tabelas ppgs_uea/ppgs_uea_emails). Só 8 dos 17 programas do edital
+// GCUB-MOB têm e-mail cadastrado até agora — os demais ficam de fora do
+// mapa (tratados como "sem contato cadastrado" na tela).
+export const PPGS_EMAILS = {
+  5: ["ibatista@uea.edu.br", "mestradoprofagua@uea.edu.br"], // PPGRH (Rede PROFÁGUA)
+  9: ["ppgdermatologia@fuam.am.gov.br"], // PPGCAD
+  1: ["mestrado@hemoam.am.gov.br"], // PPGH
+  7: ["lfonseca@uea.edu.br", "ppged@uea.edu.br"], // PPGED
+  12: ["splima@uea.edu.br", "ppgeouea@uea.edu.br"], // PPGEO
+  3: ["mpascoa@uea.edu.br", "ppgla@uea.edu.br", "sec-ppgla@uea.edu.br"], // PPGLA
+  8: ["asicsu@uea.edu.br", "proensp@uea.edu.br"], // PPGSP
+  11: ["mbt@uea.edu.br"], // PPGBIOTEC (PPGMBT)
+};
+
 // Peso ~ proporcional à distribuição real observada na raspagem (Nigéria,
 // Afeganistão, Moçambique, Paquistão, Angola, Palestina, Haiti... no topo).
 const PAISES = [

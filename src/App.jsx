@@ -20,7 +20,6 @@ import {
   Mail,
   Copy,
   Check,
-  UserRound,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -397,37 +396,13 @@ function PpgEmailsList({ candidaturas, programas }) {
   );
 }
 
-function DecisionButtons({ current, onDecide }) {
-  return (
-    <div className="flex shrink-0 items-center gap-1.5">
-      <button
-        type="button"
-        onClick={() => onDecide("Aceito")}
-        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors"
-        style={{
-          background: current === "Aceito" ? "var(--status-aceito)" : "var(--status-aceito-soft)",
-          color: current === "Aceito" ? "var(--ink-on-accent)" : "var(--status-aceito)",
-        }}
-      >
-        Aceitar
-      </button>
-      <button
-        type="button"
-        onClick={() => onDecide("Recusado")}
-        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors"
-        style={{
-          background: current === "Recusado" ? "var(--status-recusado)" : "var(--status-recusado-soft)",
-          color: current === "Recusado" ? "var(--ink-on-accent)" : "var(--status-recusado)",
-        }}
-      >
-        Recusar
-      </button>
-    </div>
-  );
+function perfilUrl(c) {
+  return `https://mob.gcub.org.br/ie/avaliar-candidato.php?id=${c.candidato_id}&programa=${c.programa_uea_id}`;
 }
 
-function PerfilCandidatosList({ candidaturas, getDecisao, setDecisao }) {
+function PerfilCandidatosList({ candidaturas }) {
   const [page, setPage] = useState(0);
+  const [copied, setCopied] = useState(false);
   const pageSize = 8;
 
   useEffect(() => {
@@ -438,19 +413,18 @@ function PerfilCandidatosList({ candidaturas, getDecisao, setDecisao }) {
   const currentPage = Math.min(page, totalPages - 1);
   const pageRows = candidaturas.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
 
-  const abrirPerfil = (c) => {
-    alert(
-      `Simulação — abriria a ficha de ${c.candidato_nome} em\n` +
-        `https://mob.gcub.org.br/ie/avaliar-candidato.php?id=${c.candidato_id}&programa=${c.programa_uea_id}\n\n` +
-        `(página real do GCUB-MOB, com o painel "Decisão da Instituição: Aceitar / Recusar" no final).`
-    );
+  const copiarTodos = async () => {
+    try {
+      await navigator.clipboard.writeText(candidaturas.map(perfilUrl).join("\n"));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard indisponível (ex.: contexto sem permissão) — ignora silenciosamente
+    }
   };
 
   return (
-    <ChartCard
-      title="Perfis dos candidatos"
-      subtitle="Link direto para a ficha de avaliação — mesmo painel de Aceitar/Recusar do GCUB-MOB"
-    >
+    <ChartCard title="Perfis dos candidatos" subtitle="Links diretos para a ficha de avaliação (Aceitar/Recusar) no GCUB-MOB">
       {candidaturas.length === 0 ? (
         <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
           Nenhuma candidatura no recorte filtrado atual.
@@ -464,34 +438,24 @@ function PerfilCandidatosList({ candidaturas, getDecisao, setDecisao }) {
                 className="flex flex-col gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
                 style={{ borderColor: "var(--border-hairline)" }}
               >
-                <button
-                  type="button"
-                  onClick={() => abrirPerfil(c)}
-                  className="flex min-w-0 flex-1 items-center gap-2 text-left transition-colors"
-                >
-                  <span
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-                    style={{ background: "var(--accent-soft)" }}
-                  >
-                    <UserRound className="h-3.5 w-3.5" style={{ color: "var(--accent-strong)" }} />
-                  </span>
-                  <span className="min-w-0">
-                    <span
-                      className="block truncate text-sm font-semibold underline decoration-dotted underline-offset-2"
-                      style={{ color: "var(--accent-strong)" }}
-                    >
-                      {c.candidato_nome}
-                    </span>
-                    <span className="block text-xs" style={{ color: "var(--ink-muted)" }}>
-                      {c.pais_origem} · {c.programa_uea_sigla}
-                    </span>
-                  </span>
-                </button>
-
-                <div className="flex shrink-0 items-center gap-2.5 sm:pl-3">
-                  <StatusBadge status={getDecisao(c)} />
-                  <DecisionButtons current={getDecisao(c)} onDecide={(d) => setDecisao(c.id, d)} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold" style={{ color: "var(--ink-primary)" }}>
+                    {c.candidato_nome}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
+                    {c.pais_origem} · {c.programa_uea_sigla}
+                  </p>
                 </div>
+                <a
+                  href={perfilUrl(c)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors"
+                  style={{ background: "var(--accent-soft)", color: "var(--accent-strong)" }}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Abrir perfil
+                </a>
               </div>
             ))}
           </div>
@@ -525,13 +489,28 @@ function PerfilCandidatosList({ candidaturas, getDecisao, setDecisao }) {
               </button>
             </div>
           </div>
+
+          <div className="mt-4 flex items-center justify-between border-t pt-4" style={{ borderColor: "var(--border-hairline)" }}>
+            <span className="text-xs" style={{ color: "var(--ink-muted)" }}>
+              {candidaturas.length} link{candidaturas.length === 1 ? "" : "s"} no recorte atual
+            </span>
+            <button
+              type="button"
+              onClick={copiarTodos}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors"
+              style={{ background: copied ? "var(--accent)" : "var(--accent-soft)", color: copied ? "var(--ink-on-accent)" : "var(--accent-strong)" }}
+            >
+              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              {copied ? "Copiado!" : "Copiar todos os links"}
+            </button>
+          </div>
         </>
       )}
     </ChartCard>
   );
 }
 
-function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, toggleFilterValue, getDecisao, setDecisao }) {
+function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, toggleFilterValue }) {
   const [page, setPage] = useState(0);
   const pageSize = 8;
 
@@ -674,7 +653,7 @@ function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, togg
                     {c.programa_uea_sigla}
                   </td>
                   <td className="border-b py-2.5 pr-3" style={{ borderColor: "var(--border-hairline)" }}>
-                    <StatusBadge status={getDecisao(c)} />
+                    <StatusBadge status={c.decisao} />
                   </td>
                   {c.documentos.map((d) => (
                     <td key={d.tipo} className="border-b py-2.5 pr-3 text-center" style={{ borderColor: "var(--border-hairline)" }}>
@@ -737,7 +716,7 @@ function FunilAvaliacao({ candidaturas, programas, filters, setFilterValue, togg
 
       <PpgEmailsList candidaturas={candidaturas} programas={programas} />
 
-      <PerfilCandidatosList candidaturas={candidaturas} getDecisao={getDecisao} setDecisao={setDecisao} />
+      <PerfilCandidatosList candidaturas={candidaturas} />
     </div>
   );
 }
@@ -1027,20 +1006,11 @@ function PerfilCandidatos({ candidatos, filters, toggleFilterValue }) {
 export default function App() {
   const [tab, setTab] = useState("visao-geral");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  // Decisões (Aceitar/Recusar) feitas ao vivo no protótipo, por id de
-  // candidatura — sobrepõem o decisao_lista original só na sessão atual
-  // (não persiste, não mexe em DATASET). Fica no App (não no FunilAvaliacao)
-  // pra sobreviver à troca de aba.
-  const [decisaoOverrides, setDecisaoOverrides] = useState({});
 
   const setFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: value }));
   const toggleFilterValue = (key, value) => setFilters((f) => ({ ...f, [key]: f[key] === value ? "todos" : value }));
   const clearFilters = () => setFilters(DEFAULT_FILTERS);
   const hasActiveFilters = Object.values(filters).some((v) => v !== "todos");
-
-  const getDecisao = (c) => decisaoOverrides[c.id] ?? c.decisao;
-  const setDecisao = (candidaturaId, decisao) =>
-    setDecisaoOverrides((prev) => ({ ...prev, [candidaturaId]: decisao }));
 
   // Filtros por candidato (país, sexo, faixa etária, professor, instituição)
   const candidatosBase = useMemo(() => {
@@ -1128,6 +1098,10 @@ export default function App() {
             Protótipo com dados fictícios para simulação de layout — não reflete candidatos reais.
           </p>
         </div>
+
+        <p className="mt-3 px-1 text-left text-[11px]" style={{ color: "var(--ink-on-sidebar-muted)" }}>
+          Powered by William Pinheiro
+        </p>
       </aside>
 
       <main className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8">
@@ -1161,8 +1135,6 @@ export default function App() {
             filters={filters}
             setFilterValue={setFilterValue}
             toggleFilterValue={toggleFilterValue}
-            getDecisao={getDecisao}
-            setDecisao={setDecisao}
           />
         )}
         {tab === "demanda" && (

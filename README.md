@@ -21,7 +21,7 @@ acento dourado, superfícies claras, cantos arredondados generosos.
 | Aba | Conteúdo |
 |---|---|
 | **Visão Geral** | KPIs (candidatos únicos, candidaturas recebidas, taxa de aceite, pendentes) + ranking dos programas com mais candidaturas |
-| **Funil de Avaliação** | Status (Pendente/Aceito/Recusado) por programa em barras empilhadas + tabela de auditoria de documentos (RG, diploma, histórico, currículo) com paginação e botão simulado "Abrir PDF" + lista de e-mails reais dos PPGs no recorte filtrado, com botão para copiar todos + lista de perfis dos candidatos com link simulado para a ficha real e botões Aceitar/Recusar (decisão fica só na sessão do navegador, não persiste) |
+| **Funil de Avaliação** | Status (Pendente/Aceito/Recusado) por programa em barras empilhadas + tabela de auditoria de documentos (RG, diploma, histórico, currículo) com paginação e botão simulado "Abrir PDF" + lista de e-mails reais dos PPGs no recorte filtrado, com botão para copiar todos + lista de links reais para a ficha de avaliação de cada candidato no GCUB-MOB, com botão para copiar todos |
 | **Demanda e Atratividade** | Rosca com a ordem de preferência (1ª–4ª opção) pela UEA + barras de concorrência (candidaturas ÷ vagas) por programa |
 | **Perfil dos Candidatos** | Países de origem, faixa etária, sexo, professor(a) universitário(a), tipo de instituição de origem e % de candidatos PCD |
 

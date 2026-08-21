@@ -82,6 +82,10 @@ const FAIXAS_ETARIAS = [
   { name: "40+", min: 40, max: 200 },
 ];
 
+// Ordem fixa de exibição — um candidato pode falar mais de um, então não
+// são buckets mutuamente exclusivos (dataset foi gerado assim de propósito).
+const IDIOMAS = ["Inglês", "Português", "Espanhol", "Francês", "Alemão", "Italiano", "Mandarim", "Outro"];
+
 // Todo filtro do painel vive nesse objeto único (App), assim qualquer
 // seleção feita clicando num gráfico em qualquer aba passa a valer nas
 // outras abas também. "todos" = sem filtro nessa dimensão.
@@ -95,6 +99,7 @@ const DEFAULT_FILTERS = {
   sexo: "todos",
   professor: "todos",
   instituicao: "todos",
+  idioma: "todos",
 };
 
 const FILTER_LABELS = {
@@ -106,6 +111,7 @@ const FILTER_LABELS = {
   sexo: "Sexo",
   professor: "Professor(a) universitário(a)",
   instituicao: "Instituição de origem",
+  idioma: "Idioma",
 };
 
 function StatusBadge({ status }) {
@@ -897,6 +903,13 @@ function PerfilCandidatos({ candidatos, filters, toggleFilterValue }) {
     return buckets;
   }, [candidatos]);
 
+  const porIdioma = useMemo(() => {
+    return IDIOMAS.map((idioma) => ({
+      idioma,
+      total: candidatos.filter((c) => (c.idiomas || []).includes(idioma)).length,
+    })).sort((a, b) => b.total - a.total);
+  }, [candidatos]);
+
   const sexoM = candidatos.filter((c) => c.sexo === "Masculino").length;
   const sexoF = candidatos.filter((c) => c.sexo === "Feminino").length;
   const pcdCount = candidatos.filter((c) => c.possui_deficiencia).length;
@@ -953,6 +966,28 @@ function PerfilCandidatos({ candidatos, filters, toggleFilterValue }) {
           </div>
         </ChartCard>
       </div>
+
+      <ChartCard title="Idiomas falados" subtitle="Um candidato pode falar mais de um idioma — clique numa barra para filtrar">
+        <div style={{ width: "100%", height: 260 }}>
+          <ResponsiveContainer>
+            <BarChart data={porIdioma} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
+              <CartesianGrid stroke="var(--border-hairline)" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: "var(--ink-muted)" }} axisLine={{ stroke: "var(--border-hairline)" }} tickLine={false} />
+              <YAxis dataKey="idioma" type="category" width={90} tick={{ fontSize: 11, fill: "var(--ink-secondary)", fontWeight: 600 }} axisLine={{ stroke: "var(--border-hairline)" }} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--border-hairline)", fontSize: 12, background: "var(--surface-panel)" }} />
+              <Bar dataKey="total" radius={[0, 6, 6, 0]} cursor="pointer" onClick={(data) => toggleFilterValue("idioma", data.idioma)}>
+                {porIdioma.map((entry, i) => (
+                  <Cell
+                    key={i}
+                    fill={i === 0 ? CHART_HEX.gold : CHART_HEX.accent}
+                    opacity={filters.idioma === "todos" || filters.idioma === entry.idioma ? 1 : 0.3}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </ChartCard>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <ChartCard title="Sexo">
@@ -1052,9 +1087,10 @@ export default function App() {
         const b = FAIXAS_ETARIAS.find((f) => f.name === filters.faixa);
         if (!b || c.idade < b.min || c.idade > b.max) return false;
       }
+      if (filters.idioma !== "todos" && !(c.idiomas || []).includes(filters.idioma)) return false;
       return true;
     });
-  }, [dataset, filters.pais, filters.sexo, filters.professor, filters.instituicao, filters.faixa]);
+  }, [dataset, filters.pais, filters.sexo, filters.professor, filters.instituicao, filters.faixa, filters.idioma]);
 
   const candidatosBaseIds = useMemo(() => new Set(candidatosBase.map((c) => c.id)), [candidatosBase]);
 

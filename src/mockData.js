@@ -139,6 +139,19 @@ function pickWeighted(rng, items, weightKey = "peso") {
   return items[items.length - 1];
 }
 
+// Incidência por candidato ~ proporção real observada em gcub.db
+// (idiomas_fluentes), independente por idioma (não mutuamente exclusivo).
+const IDIOMAS_PROB = [
+  { idioma: "Inglês", p: 0.77 },
+  { idioma: "Outro", p: 0.32 },
+  { idioma: "Português", p: 0.27 },
+  { idioma: "Francês", p: 0.16 },
+  { idioma: "Espanhol", p: 0.15 },
+  { idioma: "Alemão", p: 0.01 },
+  { idioma: "Italiano", p: 0.01 },
+  { idioma: "Mandarim", p: 0.007 },
+];
+
 function buildDataset(seed = 42) {
   const rng = seededRandom(seed);
   const candidatos = [];
@@ -164,6 +177,8 @@ function buildDataset(seed = 42) {
     const professorUniversitario = rng() < 0.18;
     const tipoInstituicao = rng() < 0.62 ? "Pública" : "Privada";
     const residenciaDiferente = rng() < 0.08;
+    let idiomas = IDIOMAS_PROB.filter((x) => rng() < x.p).map((x) => x.idioma);
+    if (idiomas.length === 0) idiomas = ["Inglês"];
 
     const candidato = {
       id: candId,
@@ -176,6 +191,7 @@ function buildDataset(seed = 42) {
       possui_deficiencia: pcd,
       e_professor_universitario: professorUniversitario,
       tipo_instituicao: tipoInstituicao,
+      idiomas,
       email_1: `${primeiroNome}.${sobrenome}${candId}@example.org`.toLowerCase(),
     };
     candidatos.push(candidato);
